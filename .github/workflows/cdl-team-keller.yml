@@ -37,7 +37,7 @@ jobs:
       run: |        
        echo "RUNRES=$(python test.py -url ${{ github.event.inputs.url }})" >> $GITHUB_ENV
       id: automation-results
-      #env:
+      #env: # check https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions and look for GITHUB_ENV, GITHUB_STATE, GITHUB_OUTPUT, etc.
       #  TITLE: ${{ steps.automation-results.outputs.title }}
       
     - name: Send results to webhook
