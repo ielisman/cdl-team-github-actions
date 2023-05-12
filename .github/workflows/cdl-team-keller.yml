@@ -35,7 +35,7 @@ jobs:
 
     - name: Run Selenium Keller
       run: |        
-        python test.py -url ${{ github.event.inputs.url }}
+       echo "RUNRES=$(python test.py -url ${{ github.event.inputs.url }})" >> $GITHUB_ENV
       id: automation-results
       #env:
       #  TITLE: ${{ steps.automation-results.outputs.title }}
@@ -43,4 +43,4 @@ jobs:
     - name: Send results to webhook
       if: always() # This step runs even if the previous steps fail
       run: |
-        curl -X POST -H "Content-Type: application/json" -d '{"title": "'"${{ env.TITLE }}"'", "url": "'"${{ github.event.inputs.url }}"'"}' https://webhook.site/5c40bbec-1186-4834-8729-72fde035229e          
+        curl -X POST -H "Content-Type: application/json" -d '{"runres": "'"${{ env.RUNRES }}"'", "url": "'"${{ github.event.inputs.url }}"'"}' https://webhook.site/5c40bbec-1186-4834-8729-72fde035229e          
