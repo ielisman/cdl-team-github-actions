@@ -5,7 +5,11 @@ import sys
 
 # Get the website URL from command line argument
 print("Arguments passed:", sys.argv)
-url = 'http://www.google.com'
+if (len(sys.argv) > 1):
+  url = sys.argv[1] # 'http://www.google.com'
+else:
+  print("URL is not supplied. Quiting")
+  quit()
 
 # Configure Chrome options for headless mode
 chrome_options = webdriver.ChromeOptions()
