@@ -35,6 +35,6 @@ jobs:
 
     - name: Run Selenium Keller
       run: |        
-        python test.py ${{ github.event.inputs.url }}
+        python test.py -url ${{ github.event.inputs.url }}
       env:
         TITLE: ${{ steps.keller-automation.outputs.title }}
