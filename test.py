@@ -4,8 +4,8 @@ from selenium.webdriver.chrome.service import Service
 import sys
 
 url = ""
-if (len(sys.argv) > 1):
-  url = sys.argv[1]
+if (len(sys.argv) > 2):
+  url = sys.argv[2]
 else:
   print("URL is not supplied. Quiting")
   quit()
