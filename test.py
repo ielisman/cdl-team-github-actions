@@ -3,7 +3,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 import sys
 
 # Get the website URL from command line argument
-url = sys.argv[2]
+url = sys.argv[1]
 
 # Configure Chrome options for headless mode
 chrome_options = webdriver.ChromeOptions()
