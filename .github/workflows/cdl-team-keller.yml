@@ -38,3 +38,18 @@ jobs:
         python test.py -url ${{ github.event.inputs.url }}
       env:
         TITLE: ${{ steps.keller-automation.outputs.title }}
+      
+    - name: Send results to webhook
+      if: always() # This step runs even if the previous steps fail
+      uses: distributhor/actions-http-request@v1.3.3
+        with:
+          url: https://webhook.site/5c40bbec-1186-4834-8729-72fde035229e
+          method: POST
+          headers: |
+            {
+              "Content-Type": "application/json"
+            }
+          data: |
+            {
+              "title": "${{ env.TITLE }}"
+            }
