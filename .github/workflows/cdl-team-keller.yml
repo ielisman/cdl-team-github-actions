@@ -41,9 +41,5 @@ jobs:
       
     - name: Send results to webhook
       if: always() # This step runs even if the previous steps fail
-      uses: distributhor/workflow-webhook
-      with:
-          url: https://webhook.site/5c40bbec-1186-4834-8729-72fde035229e
-          json: '{ "title": "${{ env.TITLE }}", "url": "${{ github.event.inputs.url }}" }'    
-      #run: |
-      #  curl -X POST -H "Content-Type: application/json" -d '{"title": "'"${{ env.TITLE }}"'", "url": "'"${{ github.event.inputs.url }}"'"}' https://webhook.site/5c40bbec-1186-4834-8729-72fde035229e          
+      run: |
+        curl -X POST -H "Content-Type: application/json" -d '{"title": "'"${{ env.TITLE }}"'", "url": "'"${{ github.event.inputs.url }}"'"}' https://webhook.site/5c40bbec-1186-4834-8729-72fde035229e          
