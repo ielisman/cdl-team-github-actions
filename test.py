@@ -3,10 +3,9 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 import sys
 
-# Get the website URL from command line argument
-print("Arguments passed:", sys.argv)
+url = ""
 if (len(sys.argv) > 1):
-  url = sys.argv[1] # 'http://www.google.com'
+  url = sys.argv[1]
 else:
   print("URL is not supplied. Quiting")
   quit()
