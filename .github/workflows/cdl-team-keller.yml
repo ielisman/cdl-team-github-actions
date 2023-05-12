@@ -35,6 +35,7 @@ jobs:
 
     - name: Run Selenium Keller
       run: |
+        echo "github.event.inputs.url=${{ github.event.inputs.url }} inputs.url=${{ inputs.url }}"
         python test.py ${{ github.event.inputs.url }}
       env:
         TITLE: ${{ steps.selenium-test.outputs.title }}
