@@ -1,10 +1,11 @@
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
-#import sys
+import sys
 
 # Get the website URL from command line argument
-url = 'http://www.google.com' # sys.argv[1]
+print("Arguments passed:", sys.argv)
+url = 'http://www.google.com'
 
 # Configure Chrome options for headless mode
 chrome_options = webdriver.ChromeOptions()
