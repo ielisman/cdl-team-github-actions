@@ -37,8 +37,8 @@ jobs:
       run: |        
         python test.py -url ${{ github.event.inputs.url }}
       id: automation-results
-      env:
-        TITLE: ${{ steps.automation-results.outputs.title }}
+      #env:
+      #  TITLE: ${{ steps.automation-results.outputs.title }}
       
     - name: Send results to webhook
       if: always() # This step runs even if the previous steps fail
