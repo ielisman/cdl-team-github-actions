@@ -48,4 +48,4 @@ jobs:
     - name: Send results to webhook
       if: always() # This step runs even if the previous steps fail
       run: |
-        curl -X POST -H "Content-Type: application/json" -d '{"runres": "'"${{ env.RUNRESULT }}"'", "url": "'"${{ github.event.inputs.url }}"'"}' https://webhook.site/70c3953f-939e-43d3-a320-697585d59ddf          
+        curl -X POST -H "Content-Type: application/json" -d '{"runres": "'"${{ env.RUNRESULT }}"'", "url": "'"${{ github.event.inputs.url }}"'",  "test123": "'"${{ env.TEST123 }}"'"}' https://webhook.site/70c3953f-939e-43d3-a320-697585d59ddf          
