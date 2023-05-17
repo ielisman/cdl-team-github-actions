@@ -24,9 +24,10 @@ driver.get(url)
 # Retrieve the website title
 title = driver.title
 os.environ['TITLE'] = title
+os.environ['TEST123'] = 'TESTOK123'
 
 # Print the website title to the console
-print(f"title={title}; URL={os.environ['URL']}; LOGIN={os.environ['LOGIN']};")
+print(f"title={title}; URL={os.environ['URL']}; LOGIN={os.environ['LOGIN']}; LOGIN_PAGE_ID_EMAIL={os.environ['LOGIN_PAGE_ID_EMAIL']}; ")
 
 # Close the webdriver
 driver.quit()
