@@ -10,6 +10,10 @@ if (len(sys.argv) > 2):
 else:
   print("URL is not supplied. Quiting")
   quit()
+  
+print (f"URL={os.environ['URL']}")
+print (f"LOGIN={os.environ['LOGIN']}")
+print (f"PWD={os.environ['PWD']}")
 
 # Configure Chrome options for headless mode
 chrome_options = webdriver.ChromeOptions()
