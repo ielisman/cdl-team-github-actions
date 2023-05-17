@@ -24,12 +24,10 @@ driver.get(url)
 # Retrieve the website title
 title = driver.title
 
-env_file = os.getenv('GITHUB_ENV') # Get the path of the runner file
-with open(env_file, "a") as repo_env_file:
+with open(os.getenv('GITHUB_ENV'), "a") as repo_env_file:
   repo_env_file.write(f"TITLE={title}\n")
-  repo_env_file.write(f"URL='{os.environ['URL']}}'\n")
-  repo_env_file.write(f"LOGIN='{os.environ['LOGIN']}}'\n")
-
+  repo_env_file.write(f"URL={os.environ['URL']}\n")
+  repo_env_file.write(f"LOGIN={os.environ['LOGIN']}\n")
 
 # Close the webdriver
 driver.quit()
