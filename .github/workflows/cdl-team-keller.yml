@@ -39,7 +39,6 @@ jobs:
         LOGIN: ${{ secrets.KELLER_ADMIN_LOGIN }}
         PWD: ${{ secrets.KELLER_ADMIN_PASSWORD }}
       run: |
-        echo "URL=$URL LOGIN=$LOGIN PWD=$PWD"
         echo "RUNRESULT=$(python test.py -url ${{ github.event.inputs.url }})" >> $GITHUB_ENV
       id: automation-results
       #env: # check https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions and look for GITHUB_ENV, GITHUB_STATE, GITHUB_OUTPUT, etc.
