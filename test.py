@@ -28,7 +28,8 @@ env_file = os.getenv('GITHUB_ENV') # Get the path of the runner file
 with open(env_file, "a") as env_file:
   env_file.write(f"TITLE={title}")
   env_file.write(f"TEST123=TESTOK123")
-
+  env_file.write(f"RUNRESULT='title={title}'")
+ 
 # Print the website title to the console
 print(f"title={title}; URL={os.environ['URL']}; LOGIN={os.environ['LOGIN']}; ")
 
