@@ -26,7 +26,7 @@ title = driver.title
 os.environ['TITLE'] = title
 
 # Print the website title to the console
-print(f"title={title} URL={os.environ['URL']} LOGIN={os.environ['LOGIN']} PWD={os.environ['PWD']} ")
+print(f"title={title}; URL={os.environ['URL']}; LOGIN={os.environ['LOGIN']};")
 
 # Close the webdriver
 driver.quit()
