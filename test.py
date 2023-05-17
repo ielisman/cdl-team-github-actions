@@ -23,11 +23,14 @@ driver.get(url)
 
 # Retrieve the website title
 title = driver.title
-os.environ['TITLE'] = title
-os.environ['TEST123'] = 'TESTOK123'
+
+env_file = os.getenv('GITHUB_ENV') # Get the path of the runner file
+with open(env_file, "a") as env_file:
+  env_file.write(f"TITLE={title}")
+  env_file.write(f"TEST123=TESTOK123")
 
 # Print the website title to the console
-print(f"title={title}; URL={os.environ['URL']}; LOGIN={os.environ['LOGIN']}; LOGIN_PAGE_ID_EMAIL={os.environ['LOGIN_PAGE_ID_EMAIL']}; ")
+print(f"title={title}; URL={os.environ['URL']}; LOGIN={os.environ['LOGIN']}; ")
 
 # Close the webdriver
 driver.quit()
