@@ -24,11 +24,15 @@ driver.get(url)
 # Retrieve the website title
 title = driver.title
 
+print (f"Opening {os.getenv('GITHUB_ENV')} environment variables file and writing new variables to that")
 env_file = os.getenv('GITHUB_ENV') # Get the path of the runner file
-with open(env_file, "a") as env_file:
-  env_file.write(f"TITLE={title}")
-  env_file.write(f"TEST123=TESTOK123")
-  env_file.write(f"RUNRESULT='title={title}'")
+with open(env_file, "a") as repo_env_file:
+  repo_env_file.write(f"TITLE={title}")
+  repo_env_file.write(f"TEST123=TESTOK123")
+  repo_env_file.write(f"RUNRESULT='title={title}'")
+  print(f"wrote TITLE={title}")
+  print(f"wrote TEST123=TESTOK123")
+  print(f"wrote RUNRESULT='title={title}'")
  
 # Print the website title to the console
 print(f"title={title}; URL={os.environ['URL']}; LOGIN={os.environ['LOGIN']}; ")
