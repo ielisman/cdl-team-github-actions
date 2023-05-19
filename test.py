@@ -1,8 +1,10 @@
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
-import sys
+import firebase_admin
 import os
+import sys
+from firebase_admin import credentials
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 url = ""
 if (len(sys.argv) > 2):
@@ -10,6 +12,18 @@ if (len(sys.argv) > 2):
 else:
   print("URL is not supplied. Quiting")
   quit()
+  
+firebase_credentials = os.environ['FIREBASE_JSON']
+firebase_creds_file = 'firebase-creds.json'
+with open(firebase_creds_file, 'w') as file:
+    file.write(firebase_credentials)
+cred = credentials.Certificate(firebase_creds_file)
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+doc_ref = db.collection('messages').document()
+doc_ref.set({
+    'message': 'test123'
+})  
 
 # Configure Chrome options for headless mode
 chrome_options = webdriver.ChromeOptions()
