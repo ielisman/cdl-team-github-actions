@@ -1,7 +1,7 @@
 import firebase_admin
 import os
 import sys
-from firebase_admin import credentials
+from firebase_admin import credentials, firestore
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
