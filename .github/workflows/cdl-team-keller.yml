@@ -30,7 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install selenium webdriver-manager argparse pytest 
+        pip install selenium webdriver-manager firebase-admin argparse pytest 
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Run Selenium Keller
@@ -38,6 +38,7 @@ jobs:
         URL: ${{ secrets.KELLER_ADMIN_URL }}
         LOGIN: ${{ secrets.KELLER_ADMIN_LOGIN }}
         PWD: ${{ secrets.KELLER_ADMIN_PASSWORD }}
+        FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
       run: |
         #echo "RUNRESULT=$(python test.py -url ${{ github.event.inputs.url }})" >> $GITHUB_ENV
         echo "Will write new environemt vars into $GITHUB_ENV" 
@@ -49,4 +50,4 @@ jobs:
     - name: Send results to webhook
       if: always() # This step runs even if the previous steps fail
       run: |
-        curl -X POST -H "Content-Type: application/json" -d '{"title": "'"${{ env.TITLE }}"'", "url": "'"${{ github.event.inputs.url }}"'",  "login": "'"${{ env.LOGIN }}"'"}' https://webhook.site/70c3953f-939e-43d3-a320-697585d59ddf          
+        curl -X POST -H "Content-Type: application/json" -d '{"title": "'"${{ env.TITLE }}"'", "url": "'"${{ github.event.inputs.url }}"'",  "login": "'"${{ env.LOGIN }}"'"}' https://webhook.site/#!/beac2947-3606-48b6-b103-04023ed82875          
