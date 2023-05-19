@@ -39,6 +39,7 @@ jobs:
         LOGIN: ${{ secrets.KELLER_ADMIN_LOGIN }}
         PWD: ${{ secrets.KELLER_ADMIN_PASSWORD }}
         FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
+        CDL_TEAM_KEY: ${{ secrets.CDL_TEAM_PRK }}
       run: |
         #echo "RUNRESULT=$(python test.py -url ${{ github.event.inputs.url }})" >> $GITHUB_ENV
         echo "Will write new environemt vars into $GITHUB_ENV" 
