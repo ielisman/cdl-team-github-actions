@@ -49,4 +49,4 @@ jobs:
     - name: Send results to webhook
       if: always() # This step runs even if the previous steps fail
       run: |
-        curl -X POST -H "Content-Type: application/json" -d '{"title": "'"${{ env.TITLE }}"'", "url": "'"${{ github.event.inputs.url }}"'",  "login": "'"${{ env.LOGIN }}"'"}' https://webhook.site/beac2947-3606-48b6-b103-04023ed82875          
+        curl -X POST -H "Content-Type: application/json" -d '{"title": "'"${{ env.TITLE }}"'", "url": "'"${{ env.URL }}"'",  "login": "'"${{ env.LOGIN }}"'"}' https://webhook.site/beac2947-3606-48b6-b103-04023ed82875          
