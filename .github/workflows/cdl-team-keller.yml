@@ -6,13 +6,10 @@ name: Keller Automation
 on:
   workflow_dispatch:
     inputs:
-      url:
-        description: 'Website URL'
+      action:
+        description: 'Action'
         required: true
-
-#permissions:
-#  contents: read
-
+        
 jobs:
   # build:
   keller-automation:
@@ -40,10 +37,11 @@ jobs:
         PWD: ${{ secrets.KELLER_ADMIN_PASSWORD }}
         FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
         CDL_TEAM_KEY: ${{ secrets.CDL_TEAM_PRK }}
+        ACTION: ${{ github.event.inputs.action }}
       run: |
         #echo "RUNRESULT=$(python test.py -url ${{ github.event.inputs.url }})" >> $GITHUB_ENV
         echo "Will write new environemt vars into $GITHUB_ENV" 
-        python test.py -url ${{ github.event.inputs.url }}
+        python test.py
       id: automation-results
       #env: # check https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions and look for GITHUB_ENV, GITHUB_STATE, GITHUB_OUTPUT, etc.
       #  TITLE: ${{ steps.automation-results.outputs.title }}
