@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Keller Automation
+name: Keller Automation Test
 
 on:
   workflow_dispatch:
@@ -11,7 +11,8 @@ on:
         required: true
         
 jobs:
-  keller-automation:
+  # build:
+  keller-automation-test:
 
     runs-on: ubuntu-latest
 
@@ -26,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install selenium webdriver-manager firebase-admin pycryptodome argparse pytest 
+        pip install selenium webdriver-manager firebase-admin pycryptodome pytest 
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Run Selenium Keller
@@ -38,5 +39,14 @@ jobs:
         CDL_TEAM_KEY: ${{ secrets.CDL_TEAM_PRK }}
         ACTION: ${{ github.event.inputs.action }}
       run: |
-        python enroll.py
-      id: automation-results          
+        #echo "RUNRESULT=$(python test.py -url ${{ github.event.inputs.url }})" >> $GITHUB_ENV
+        echo "Will write new environemt vars into $GITHUB_ENV" 
+        python test.py
+      id: automation-results
+      #env: # check https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions and look for GITHUB_ENV, GITHUB_STATE, GITHUB_OUTPUT, etc.
+      #  TITLE: ${{ steps.automation-results.outputs.title }}
+      
+    - name: Send results to webhook
+      if: always() # This step runs even if the previous steps fail
+      run: |
+        curl -X POST -H "Content-Type: application/json" -d '{"title": "'"${{ env.TITLE }}"'", "url": "'"${{ env.URL }}"'",  "login": "'"${{ env.LOGIN }}"'"}' https://webhook.site/beac2947-3606-48b6-b103-04023ed82875          
