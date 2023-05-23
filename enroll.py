@@ -45,10 +45,26 @@ json_object = json.loads(json_string)
 # get parameters from json
 firstName = json_object['firstName']
 lastName = json_object['lastName']
+fln = f"{firstName} {lastName}"
 email = json_object['email']
-id = json_object['id']
+state_id = json_object['id']
+try:
+    id = state_id[state_id.index('-') + 1:]
+except ValueError:
+    id = state_id
 coursesId = json_object['coursesId']
 phone = json_object['phone']
+schoolId = json_object['schoolId']
+
+doc_ref = db.collection('integrations').document(schoolId).collection('jjkeller')
+
+def writeToFirestore(status, message, doc_ref=doc_ref, state_id=state_id, id=id, coursesId=coursesId,createdOn=datetime.now(), isQuit=False):
+    print(message)
+    the_doc = doc_ref.document(state_id)
+    the_doc.set({ 'studentId': id, 'coursesId': coursesId, 'status': status, 'createdOn': createdOn, 'message': message })
+    if isQuit:
+        quit()
+
 
 # selenium run
 def addStudent(firstName,lastName,email,phone,id,location) -> bool:
@@ -134,15 +150,9 @@ driver.find_element(by=By.ID, value=const.LOGIN_PAGE_ID_SIGNIN).click()
 try:
     signout = driver.find_element(by=By.ID, value=const.DASH_PAGE_ID_SIGNOUT)
     if (signout.text != const.DASH_PAGE_VAL_SIGNOUT):
-        print ("Login error: Do not see sign out in Dashboard")
-        doc_ref = db.collection('messages').document()
-        doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Login error: Do not see sign out in Dashboard. Student {firstName} {lastName}" })
-        quit()
+        writeToFirestore('Not Enrolled',f"Login error: Do not see sign out in Dashboard. Student {fln}", isQuit=True) 
 except:
-    print ("Login error: cannot login")
-    doc_ref = db.collection('messages').document()
-    doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Login error: cannot login. Student {firstName} {lastName}" })
-    quit()
+    writeToFirestore('Not Enrolled',f"Login error: cannot login. Student {fln}", isQuit=True)
 
 # STUDENTS PAGE
 aMyStudents = driver.find_element(by=By.LINK_TEXT, value=const.DASH_PAGE_ATXT_MYSTUDENTS)
@@ -151,15 +161,9 @@ try:
     searchBtn = driver.find_element(by=By.ID, value=const.STUDENT_PAGE_ID_SEARCH)
     searchBtnType = searchBtn.get_attribute(const.STUDENT_PAGE_ATT_TP_SEARCH)
     if searchBtnType != const.STUDENT_PAGE_ATT_VAL_SEARCH:
-        print (f"Students error: Do not see {const.STUDENT_PAGE_ATT_TP_SEARCH}={const.STUDENT_PAGE_ATT_VAL_SEARCH} in {const.STUDENT_PAGE_ID_SEARCH}")
-        doc_ref = db.collection('messages').document()
-        doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Students error: Do not see {const.STUDENT_PAGE_ATT_TP_SEARCH}={const.STUDENT_PAGE_ATT_VAL_SEARCH} in {const.STUDENT_PAGE_ID_SEARCH}. Student {firstName} {lastName}" })
-        quit()
+        writeToFirestore('Not Enrolled',f"Students error: Do not see {const.STUDENT_PAGE_ATT_TP_SEARCH}={const.STUDENT_PAGE_ATT_VAL_SEARCH} in {const.STUDENT_PAGE_ID_SEARCH}. Student {fln}", isQuit=True)
 except:
-    print ("Students error: cannot find student page elements")
-    doc_ref = db.collection('messages').document()
-    doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Students error: cannot find student page elements. Student {firstName} {lastName}" })
-    quit()
+    writeToFirestore('Not Enrolled',f"Students error: cannot find student page elements. Student {fln}", isQuit=True)
 
 # SEARCH FOR SPECIFIC STUDENT  
 txtId = driver.find_element(by=By.ID, value=const.STUDENT_PAGE_ID_ID)
@@ -171,10 +175,7 @@ try:
     searchBtn.click()            
     WebDriverWait(driver, 20).until(EC.staleness_of(grid))
 except:
-    print(f"Search Student: unable to submit user search for {id}")
-    doc_ref = db.collection('messages').document()
-    doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Search Student: unable to submit user search for {firstName} {lastName}" })
-    quit()
+    writeToFirestore('Not Enrolled',f"Search Student: unable to submit user search for {fln}", isQuit=True)
     
 # SEE IF ANY RECORDS RETURNED PER STUDENT
 isStudentRegistered = False
@@ -185,10 +186,7 @@ try: # only parsing first 50 records
         isStudentRegistered = True
         print (f"Found id {id}")
 except:
-    print(f"Search Student Record: unable to retrieve user search for {id}")
-    doc_ref = db.collection('messages').document()
-    doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Search Student Record: unable to retrieve user search for {firstName} {lastName}" })
-    quit()
+    writeToFirestore('Not Enrolled',f"Search Student Record: unable to retrieve user search for {fln}", isQuit=True)
 
 # STUDENT IS NOT FOUND, REGISTER THAT STUDENT
 if not isStudentRegistered:
@@ -196,17 +194,11 @@ if not isStudentRegistered:
     try:
         result = addStudent(firstName=firstName, lastName=lastName, email=email, phone=phone, id=id, location=const.DEFAULT_LOCATION)
         if not result:
-             print (f"Save Student Record: Problem saving student with id {id}")
-             doc_ref = db.collection('messages').document()
-             doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Save Student Record: Unable to save student {firstName} {lastName}" })
-             quit()
+             writeToFirestore('Not Enrolled',f"Save Student Record: Unable to save student {fln}", isQuit=True)
         else:
             driver.get(const.DASH_URL)
     except:
-        print (f"Save Student Record: Unable to save student with id {id}")
-        doc_ref = db.collection('messages').document()
-        doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Save Student Record: Unable to save student {firstName} {lastName}" })
-        quit()
+        writeToFirestore('Not Enrolled',f"Save Student Record: excaption while save student {fln}", isQuit=True)
 else:
     print (f"student with id {id} is already registered in the system")
 
@@ -236,10 +228,7 @@ for tr in trList:
                 selectRec.click()
     i = i + 1
 if not flagEnroll:
-    print (f"Cannot select record for id {id}")
-    doc_ref = db.collection('messages').document()
-    doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Cannot select record for {firstName} {lastName}" })
-    quit()
+    writeToFirestore('Not Enrolled',f"Cannot select record for {fln}", isQuit=True)
 
 # SET 80 SCORE
 driver.find_element(by=By.ID, value=const.ENROLL_PAGE_ID_CONTINUE).click()
@@ -278,26 +267,16 @@ try:
     searchBtn.click()            
     WebDriverWait(driver, 20).until(EC.staleness_of(grid))    
 except:
-    print(f"Search Student: unable to submit user search for {id}")
-    doc_ref = db.collection('messages').document()
-    doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Search Student: unable to submit user search for {firstName} {lastName}" })
-    quit()
+    writeToFirestore('Not Enrolled',f"Search Student: unable to submit user search for {fln}", isQuit=True)
 
 if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE):
-    print (f"Verify student enrollement: cannot find student with id {id}")
-    doc_ref = db.collection('messages').document()
-    doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Verify student enrollement: cannot find student with id {firstName} {lastName}" })
-    quit()
+    writeToFirestore('Not Enrolled',f"Verify student enrollement: cannot find student with id {id} and name {fln}", isQuit=True)
+
 driver.find_element(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE).click()
 if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_REC_37):
-    print (f"Could not find enrollement for student id {id}")
-    doc_ref = db.collection('messages').document()
-    doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Not enrolled', 'createdOn': datetime.now(), 'message': f"Could not find enrollement for student id {firstName} {lastName}" })
-    quit()
+    writeToFirestore('Not Enrolled',f"Could not find enrollement for student {fln}", isQuit=True)
 else:
-    print(f"Student {firstName} {lastName} with id {id} is enrolled into {coursesId}")
-    doc_ref = db.collection('messages').document()
-    doc_ref.set({ 'studentId': id, 'coursesId': coursesId, 'status': 'Enrolled', 'createdOn': datetime.now(), 'message':'Success' })
+    writeToFirestore('Enrolled',f"Student {fln} with id {id} successfully enrolled into {coursesId}")
 
 #time.sleep(30)
 #title = driver.title
