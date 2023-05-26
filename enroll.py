@@ -56,15 +56,29 @@ coursesId = json_object['coursesId']
 phone = json_object['phone']
 schoolId = json_object['schoolId']
 
-doc_ref = db.collection('integrations').document(schoolId).collection('jjkeller')
+doc_ref = db.collection('integrations').document(schoolId).collection('jjkeller').document(state_id)
 
 def writeToFirestore(status, message, doc_ref=doc_ref, state_id=state_id, id=id, coursesId=coursesId,createdOn=datetime.now(), isQuit=False):
     print(message)
-    the_doc = doc_ref.document(state_id)
-    the_doc.set({ 'studentId': id, 'coursesId': coursesId, 'status': status, 'createdOn': createdOn, 'message': message })
+    new_record = {
+        'created_on': createdOn,
+        'message': message,
+        'status': status
+    }
+    doc = doc_ref.get()
+    if doc.exists:
+        existing_data = doc.to_dict()
+        if coursesId in existing_data['courses']:
+            existing_data['courses'][coursesId].insert(0, new_record)
+        else:
+            existing_data['courses'][coursesId] = [new_record]
+        doc_ref.update({'courses': existing_data['courses']})
+    else:
+        new_data = { 'studentId': id, 'courses': { coursesId: [ new_record ] } }
+        doc_ref.set(new_data)
+
     if isQuit:
         quit()
-
 
 # selenium run
 def addStudent(firstName,lastName,email,phone,id,location) -> bool:
