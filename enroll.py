@@ -52,7 +52,7 @@ try:
     id = state_id[state_id.index('-') + 1:]
 except ValueError:
     id = state_id
-coursesId = json_object['coursesId']
+coursesId = json_object['coursesId'] # 10839 - ELDT Class A Theory, 12139 - Hazmat
 phone = json_object['phone']
 schoolId = json_object['schoolId']
 
@@ -286,6 +286,7 @@ except:
 if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE):
     writeToFirestore('Not Enrolled',f"Verify student enrollement: cannot find student with id {id} and name {fln}", isQuit=True)
 
+# for each course, there must be identification. below is only for ELDT Theory
 driver.find_element(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE).click()
 if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_REC_37):
     writeToFirestore('Not Enrolled',f"Could not find enrollement for student {fln}", isQuit=True)
