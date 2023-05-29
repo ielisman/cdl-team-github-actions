@@ -286,17 +286,17 @@ try:
     searchBtn.click()            
     WebDriverWait(driver, 20).until(EC.staleness_of(grid))    
 except:
-    writeToFirestore('Not Enrolled',f"Search Student: unable to submit user search for {fln}", isQuit=True)
+    writeToFirestore('Not Enrolled',f"Search Student: unable to submit user search for {fln}", courseName=courseName, isQuit=True)
 
 if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE):
-    writeToFirestore('Not Enrolled',f"Verify student enrollement: cannot find student with id {id} and name {fln}", isQuit=True)
+    writeToFirestore('Not Enrolled',f"Verify student enrollement: cannot find student with id {id} and name {fln}", courseName=courseName, isQuit=True)
 
 # for each course, there must be identification. below is only for ELDT Theory
 driver.find_element(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE).click()
 if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_REC_37):
-    writeToFirestore('Not Enrolled',f"Could not find enrollement for student {fln}", isQuit=True)
+    writeToFirestore('Not Enrolled',f"Could not find enrollement for student {fln}", courseName=courseName, isQuit=True)
 else:
-    writeToFirestore('Enrolled',f"Student {fln} with id {id} successfully enrolled into {coursesId}")
+    writeToFirestore('Enrolled',f"Student {fln} with id {id} successfully enrolled into {coursesId}", courseName=courseName)
 
 #time.sleep(30)
 #title = driver.title
