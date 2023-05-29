@@ -53,17 +53,19 @@ try:
 except ValueError:
     id = state_id
 coursesId = json_object['coursesId'] # 10839 - ELDT Class A Theory, 12139 - Hazmat
+courseName = coursesId
 phone = json_object['phone']
 schoolId = json_object['schoolId']
 
 doc_ref = db.collection('integrations').document(schoolId).collection('jjkeller').document(state_id)
 
-def writeToFirestore(status, message, doc_ref=doc_ref, state_id=state_id, id=id, coursesId=coursesId,createdOn=datetime.now(), isQuit=False):
+def writeToFirestore(status, message, doc_ref=doc_ref, state_id=state_id, id=id, coursesId=coursesId, courseName=courseName, createdOn=datetime.now(), isQuit=False):
     print(message)
     new_record = {
         'created_on': createdOn,
         'message': message,
-        'status': status
+        'status': status,
+        'course': courseName
     }
     doc = doc_ref.get()
     if doc.exists:
@@ -212,7 +214,7 @@ if not isStudentRegistered:
         else:
             driver.get(const.DASH_URL)
     except:
-        writeToFirestore('Not Enrolled',f"Save Student Record: excaption while save student {fln}", isQuit=True)
+        writeToFirestore('Not Enrolled',f"Save Student Record: exception while save student {fln}", isQuit=True)
 else:
     print (f"student with id {id} is already registered in the system")
 
@@ -220,6 +222,9 @@ WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.ID, const.
 
 # OPEN COURSES PAGE, SELECT A COURSE, SEARCH, FIND AND SELECT STUDENT TO ENROLL
 driver.get(f"{const.ENROLL_PAGE_CURRICULUM_URL_PRE}{coursesId}")
+if is_element_present(by=By.ID, value=const.ENROLL_PAGE_ID_COURSE_NAME):
+    courseName = driver.find_element(by=By.ID, value=const.ENROLL_PAGE_ID_COURSE_NAME).text
+    print(f"Course name for {coursesId} is {courseName}")
 driver.find_element(by=By.ID, value=const.ENROLL_PAGE_ID_ENROLL_STUDENTS).click()
 driver.get(f"{const.ENROLL_PAGE_STENRBATCH_URL_PRE}{coursesId}")
 WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.ID, const.ENROLL_PAGE_ID_PAGER_SEARCH) ))
