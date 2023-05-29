@@ -43,6 +43,7 @@ ADDSTUD_PAGE_ID_BTN_SAVE        = "ContentPlaceHolder1_ibtnSave"
 
 ENROLL_PAGE_CURRICULUM_URL_PRE  = r"https://www.jjkellertraining.com/Views/InteractiveTraining/CurriculumCourses.aspx?CID="
 ENROLL_PAGE_ID_ENROLL_STUDENTS  = "ContentPlaceHolder1_lbtnEnrollStudents"
+ENROLL_PAGE_ID_COURSE_NAME      = "ContentPlaceHolder1_lblCourse"
 ENROLL_PAGE_STENRBATCH_URL_PRE  = r"https://www.jjkellertraining.com/Views/InteractiveTraining/StudentsEnrollBatch.aspx?ReturnToPage=CourseListKeller&CID="
 ENROLL_PAGE_ID_PAGER_SEARCH     = "ContentPlaceHolder1_dtpagersearchresults"
 ENROLL_PAGE_ID_LAST_NAME        = "ContentPlaceHolder1_txtLastName"
