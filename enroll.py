@@ -18,7 +18,7 @@ from selenium.webdriver.support         import expected_conditions as EC
 from selenium.webdriver.support.ui      import WebDriverWait, Select
 from webdriver_manager.chrome           import ChromeDriverManager
 
-coursesIdPatterMap = {
+coursesIdPatternMap = {
     '10839' : 'Entry-Level Driver Training:',
     '12139' : 'Safe and Smart Entry-Level Driver Training Hazmat Endorsement:',
 }
@@ -299,7 +299,7 @@ if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE):
 # for each course, there must be identification. below is only for ELDT Theory
 driver.find_element(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE).click()
 #if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_REC_37):
-if not is_element_present(by=By.XPATH, value="//tr/td[contains(., '" + {coursesIdPatterMap[coursesId]} + "')]"):
+if not is_element_present(by=By.XPATH, value="//tr/td[contains(., '" + coursesIdPatternMap[coursesId] + "')]"):
     writeToFirestore('Not Enrolled',f"Could not find enrollement for {fln}", courseName=courseName, isQuit=True)
 else:
     writeToFirestore('Enrolled',f"{id} successfully enrolled into {coursesId}", courseName=courseName)
