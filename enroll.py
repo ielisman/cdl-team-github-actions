@@ -90,7 +90,7 @@ def addStudent(firstName,lastName,email,phone,id,location) -> bool:
         aAddStudentRec = driver.find_element(by=By.LINK_TEXT, value=const.STUDENT_PAGE_ATXT_ADDSTUDREC)
         aAddStudentRec.click()
     except:
-        raise WebDriverException("Add Student: unable to click Add Student Record") 
+        raise WebDriverException("Add Student: unable to click Add Record") 
 
     try:
         WebDriverWait(driver, 15).until(
@@ -100,7 +100,7 @@ def addStudent(firstName,lastName,email,phone,id,location) -> bool:
                 const.ADDSTUD_PAGE_ID_EMAIL_VAL)
         )
     except:
-        print(f"Add Student: waiting to get add students record page failed")        
+        print(f"Add Student: waiting for records page failed")        
 
     try:
         txtStudentFname = driver.find_element(by=By.ID, value=const.ADDSTUD_PAGE_ID_FIRSTNAME)
@@ -120,7 +120,7 @@ def addStudent(firstName,lastName,email,phone,id,location) -> bool:
         btnStudentSave.click()
         flag = True
     except:
-        raise WebDriverException("Add Student: unable to Add Student Record") 
+        raise WebDriverException("Add Student: unable to Add Record") 
     finally:
         clearAddStudentRecordFields()
 
@@ -166,9 +166,9 @@ driver.find_element(by=By.ID, value=const.LOGIN_PAGE_ID_SIGNIN).click()
 try:
     signout = driver.find_element(by=By.ID, value=const.DASH_PAGE_ID_SIGNOUT)
     if (signout.text != const.DASH_PAGE_VAL_SIGNOUT):
-        writeToFirestore('Not Enrolled',f"Login error: Do not see sign out in Dashboard. Student {fln}", isQuit=True) 
+        writeToFirestore('Not Enrolled',f"Login error: Do not see sign out in Dashboard {fln}", isQuit=True) 
 except:
-    writeToFirestore('Not Enrolled',f"Login error: cannot login. Student {fln}", isQuit=True)
+    writeToFirestore('Not Enrolled',f"Login error: cannot login {fln}", isQuit=True)
 
 # STUDENTS PAGE
 aMyStudents = driver.find_element(by=By.LINK_TEXT, value=const.DASH_PAGE_ATXT_MYSTUDENTS)
@@ -177,9 +177,9 @@ try:
     searchBtn = driver.find_element(by=By.ID, value=const.STUDENT_PAGE_ID_SEARCH)
     searchBtnType = searchBtn.get_attribute(const.STUDENT_PAGE_ATT_TP_SEARCH)
     if searchBtnType != const.STUDENT_PAGE_ATT_VAL_SEARCH:
-        writeToFirestore('Not Enrolled',f"Students error: Do not see {const.STUDENT_PAGE_ATT_TP_SEARCH}={const.STUDENT_PAGE_ATT_VAL_SEARCH} in {const.STUDENT_PAGE_ID_SEARCH}. Student {fln}", isQuit=True)
+        writeToFirestore('Not Enrolled',f"error: Dont see {const.STUDENT_PAGE_ATT_TP_SEARCH}={const.STUDENT_PAGE_ATT_VAL_SEARCH} in {const.STUDENT_PAGE_ID_SEARCH}. Student {fln}", isQuit=True)
 except:
-    writeToFirestore('Not Enrolled',f"Students error: cannot find student page elements. Student {fln}", isQuit=True)
+    writeToFirestore('Not Enrolled',f"error: cannot find student page elements for {fln}", isQuit=True)
 
 # SEARCH FOR SPECIFIC STUDENT  
 txtId = driver.find_element(by=By.ID, value=const.STUDENT_PAGE_ID_ID)
@@ -191,7 +191,7 @@ try:
     searchBtn.click()            
     WebDriverWait(driver, 20).until(EC.staleness_of(grid))
 except:
-    writeToFirestore('Not Enrolled',f"Search Student: unable to submit user search for {fln}", isQuit=True)
+    writeToFirestore('Not Enrolled',f"Search: unable to submit user search for {fln}", isQuit=True)
     
 # SEE IF ANY RECORDS RETURNED PER STUDENT
 isStudentRegistered = False
@@ -202,7 +202,7 @@ try: # only parsing first 50 records
         isStudentRegistered = True
         print (f"Found id {id}")
 except:
-    writeToFirestore('Not Enrolled',f"Search Student Record: unable to retrieve user search for {fln}", isQuit=True)
+    writeToFirestore('Not Enrolled',f"Search Record: unable to retrieve user search for {fln}", isQuit=True)
 
 # STUDENT IS NOT FOUND, REGISTER THAT STUDENT
 if not isStudentRegistered:
@@ -210,13 +210,13 @@ if not isStudentRegistered:
     try:
         result = addStudent(firstName=firstName, lastName=lastName, email=email, phone=phone, id=id, location=const.DEFAULT_LOCATION)
         if not result:
-             writeToFirestore('Not Enrolled',f"Save Student Record: Unable to save student {fln}", isQuit=True)
+             writeToFirestore('Not Enrolled',f"Save Record: Unable to save student {fln}", isQuit=True)
         else:
             driver.get(const.DASH_URL)
     except:
-        writeToFirestore('Not Enrolled',f"Save Student Record: exception while save student {fln}", isQuit=True)
+        writeToFirestore('Not Enrolled',f"Save Record: exception while save student {fln}", isQuit=True)
 else:
-    print (f"student with id {id} is already registered in the system")
+    print (f"{id} is already registered in the system")
 
 WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.ID, const.DASH_PAGE_ID_ONLINETRAINING) ))
 
@@ -286,17 +286,17 @@ try:
     searchBtn.click()            
     WebDriverWait(driver, 20).until(EC.staleness_of(grid))    
 except:
-    writeToFirestore('Not Enrolled',f"Search Student: unable to submit user search for {fln}", courseName=courseName, isQuit=True)
+    writeToFirestore('Not Enrolled',f"Search: unable to submit user search for {fln}", courseName=courseName, isQuit=True)
 
 if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE):
-    writeToFirestore('Not Enrolled',f"Verify student enrollement: cannot find student with id {id} and name {fln}", courseName=courseName, isQuit=True)
+    writeToFirestore('Not Enrolled',f"Verify enrollement: cannot find student with id {id} and name {fln}", courseName=courseName, isQuit=True)
 
 # for each course, there must be identification. below is only for ELDT Theory
 driver.find_element(by=By.ID, value=const.VERIFY_PAGE_ID_RECORD_ONE).click()
 if not is_element_present(by=By.ID, value=const.VERIFY_PAGE_ID_REC_37):
-    writeToFirestore('Not Enrolled',f"Could not find enrollement for student {fln}", courseName=courseName, isQuit=True)
+    writeToFirestore('Not Enrolled',f"Could not find enrollement for {fln}", courseName=courseName, isQuit=True)
 else:
-    writeToFirestore('Enrolled',f"Student {fln} with id {id} successfully enrolled into {coursesId}", courseName=courseName)
+    writeToFirestore('Enrolled',f"{id} successfully enrolled into {coursesId}", courseName=courseName)
 
 #time.sleep(30)
 #title = driver.title
