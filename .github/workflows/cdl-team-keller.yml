@@ -38,5 +38,5 @@ jobs:
         CDL_TEAM_KEY: ${{ secrets.CDL_TEAM_PRK }}
         ACTION: ${{ github.event.inputs.action }}
       run: |
-        python enroll.py --enroll
+        python enroll.py
       id: automation-results          
