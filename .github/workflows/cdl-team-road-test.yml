@@ -24,12 +24,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install selenium webdriver-manager firebase-admin pycryptodome argparse pytest 
+        pip install selenium webdriver-manager firebase-admin pytest 
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Run Selenium Road Test Results
       env:
-        URL: ${{ secrets.NY_RT_RESULTS_URL }}
+        FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
+        URL: ${{ secrets.ROAD_TEST_URL }}
+        SCHOOL_ID: ${{ secrets.SCHOOL_ID }}
       run: |
         python roadtest.py
       id: automation-road-test-results          
