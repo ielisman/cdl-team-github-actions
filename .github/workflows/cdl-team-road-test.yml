@@ -6,8 +6,8 @@ name: Road Test Results
 on:
   schedule:
     inputs:
-      - cron: "30 22 * * 1-5"  # Runs every day at 6:30 PM EST (UTC - 4)
-        
+      #- cron: "30 22 * * 1-5"  # Runs every day at 6:30 PM EST (UTC - 4)
+      - cron: "0 0 10 2 *" 
 jobs:
   road-test-results-automation:
 
