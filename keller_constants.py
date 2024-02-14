@@ -9,7 +9,7 @@ LOGIN_PAGE_ID_EMAIL             = "ContentPlaceHolder1_txtEmail"
 LOGIN_PAGE_ID_PASSWORD          = "ContentPlaceHolder1_txtPassword"
 LOGIN_PAGE_ID_SIGNIN            = "ContentPlaceHolder1_ibtnSignIn"
 LOGIN_PAGE_VAL_EMAIL            = "yshpatserman@gmail.com"
-LOGIN_PAGE_VAL_PASSWORD         = "201_Ditmas!" #"1940Odessa"
+LOGIN_PAGE_VAL_PASSWORD         = "Ditmas2014!" #"1940Odessa"
 
 DASH_URL                        = r"https://www.jjkellertraining.com/Views/Dashboard/MyDashboard.aspx"
 DASH_PAGE_ID_SIGNOUT            = "hlSignout"
