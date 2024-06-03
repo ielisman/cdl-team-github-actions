@@ -28,7 +28,7 @@ def on_snapshot(docs, changes, read_time):
 def log_deletion(fs_col, fs_type, doc_id, doc_data):
     log_entry = {
         'coll': fs_col,
-        'timestamp': firestore.SERVER_TIMESTAMP
+        'date': firestore.SERVER_TIMESTAMP,
         'type': fs_type,
         'doc_id': doc_id,
         'value': doc_data        
