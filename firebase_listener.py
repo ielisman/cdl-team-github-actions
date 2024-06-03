@@ -18,12 +18,18 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 schedule_collection = db.collection('schedule')
+students_collection = db.collection('students')
 logging_collection = db.collection('logging')
 
-def on_snapshot(docs, changes, read_time):
+def on_schedule_snapshot(docs, changes, read_time):
     for change in changes:
         if change.type.name == 'REMOVED':
             log_deletion('schedule', 'remove', change.document.id, change.document.to_dict())
+
+def on_students_snapshot(docs, changes, read_time):
+    for change in changes:
+        if change.type.name == 'REMOVED':
+            log_deletion('students', 'remove', change.document.id, change.document.to_dict())
 
 def log_deletion(fs_col, fs_type, doc_id, doc_data):
     log_entry = {
@@ -37,15 +43,17 @@ def log_deletion(fs_col, fs_type, doc_id, doc_data):
     print(f"Logged deletion of document {doc_id}")
 
 def main():
-    print("Listening for deletions in 'schedule' collection...")
-    query_watch = schedule_collection.on_snapshot(on_snapshot)
+    print("Listening for deletions in 'schedule' and 'students' collections ...")
+    schedule_query_watch = schedule_collection.on_snapshot(on_schedule_snapshot)
+    students_query_watch = students_collection.on_snapshot(on_students_snapshot)
 
     # Keep the script running
     try:
         while True:
             pass
     except KeyboardInterrupt:
-        query_watch.unsubscribe()
+        schedule_query_watch.unsubscribe()
+        students_query_watch.unsubscribe()
         print("Stopped listening for deletions.")
 
 if __name__ == "__main__":
