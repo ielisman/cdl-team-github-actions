@@ -40,7 +40,7 @@ def log_deletion(fs_col, fs_type, doc_id, doc_data):
         'value': doc_data        
     }
     logging_collection.add(log_entry)
-    print(f"Logged deletion of document {doc_id}")
+    print(f"Logged deletion of document {doc_id}: {doc_data}")
 
 def main():
     print("Listening for deletions in 'schedule' and 'students' collections ...")
