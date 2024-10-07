@@ -30,6 +30,7 @@ data = {
   ],
 }
 
+# https://github.com/sendgrid/sendgrid-python/blob/main/examples/mail/mail.py#L27
 sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
 response = sg.client.mail.send.post(request_body=data)
 print(response.status_code)
