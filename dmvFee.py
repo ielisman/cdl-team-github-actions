@@ -1,7 +1,7 @@
 import argparse
-import base64
-import road_test_constants as const
-import firebase_admin
+#import base64
+#import road_test_constants as const
+#import firebase_admin
 import json
 import os
 import time
@@ -10,7 +10,7 @@ import undetected_chromedriver as uc
 from Crypto.PublicKey                   import RSA
 from Crypto.Cipher                      import PKCS1_OAEP
 from datetime                           import timedelta, date, datetime
-from firebase_admin                     import credentials, firestore
+#from firebase_admin                     import credentials, firestore
 from selenium                           import webdriver
 from selenium.common.exceptions         import WebDriverException, NoSuchElementException
 from selenium.webdriver.chrome.service  import Service
@@ -48,26 +48,32 @@ try:
     driver.find_element(by=By.ID, value="sDOBYear").send_keys("1997")
     driver.find_element(by=By.ID, value="sCDL").click()
     driver.find_element(by=By.ID, value="sEmailAddress").clear()
-    driver.find_element(by=By.ID, value="sEmailAddress").send_keys("redhookcdl@gmail.com")
-    #driver.find_element(by=By.NAME, value="frmGetDrvInfo").click()
+    driver.find_element(by=By.ID, value="sEmailAddress").send_keys("redhookcdl@gmail.com")  
     driver.find_element(by=By.ID, value="sEmailAddress2").clear()
     driver.find_element(by=By.ID, value="sEmailAddress2").send_keys("redhookcdl@gmail.com")
     s = driver.find_element(by=By.NAME, value="submit order")
-    #s.click()
-    #time.sleep(3)
-    #driver.find_element(by=By.NAME, value="frmGetDrvInfo").submit()
+  
+    driver.find_element(by=By.NAME, value="frmGetDrvInfo").submit()
     try: 
         WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.NAME, "btnPrevious") ))
     except Exception as e1:
         print()
-    #driver.get("https://api.convergepay.com/hosted-payments/")
-    # driver.find_element_by_xpath("//button[@id='id_checkout']/div").click()
-    # #driver.find_element(by=By.ID, value="ssl_card_number").click()
-    # driver.find_element(by=By.ID, value="ssl_card_number").clear()
-    # driver.find_element(by=By.ID, value="ssl_card_number").send_keys("")
-    # #driver.find_element(by=By.ID, value="ssl_exp_date").click()
-    # driver.find_element(by=By.ID, value="ssl_exp_date").clear()
-    # driver.find_element(by=By.ID, value="ssl_exp_date").send_keys("")
+    driver.find_element(by=By.NAME, value="frmVerify").submit() #by=By.NAME, value="submit order"
+
+    try:
+       WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.XPATH, "//button[@id='id_checkout']/div") ))
+    except Exception as e2:
+       print()
+    ###################### WORKS FINE UNDER DIFFERENT ENV: 
+
+    #driver.find_element(by=By.NAME, value="id_checkout").click()
+    #id_checkout
+    driver.find_element(by=By.XPATH, value="//button[@id='id_checkout']/div").click()    
+        
+    driver.find_element(by=By.ID, value="ssl_card_number").clear()
+    driver.find_element(by=By.ID, value="ssl_card_number").send_keys("")
+    driver.find_element(by=By.ID, value="ssl_exp_date").clear()
+    driver.find_element(by=By.ID, value="ssl_exp_date").send_keys("")
     # #driver.find_element(by=By.ID, value="ssl_cvv2cvc2").click()
     # driver.find_element(by=By.ID, value="ssl_cvv2cvc2").clear()
     # driver.find_element(by=By.ID, value="ssl_cvv2cvc2").send_keys("648")
@@ -90,7 +96,7 @@ try:
 except Exception as e:
     print(f"Exception occurred: {e}") 
 
-time.sleep(50)
+time.sleep(350)
 driver.quit()
 
 # chrome_options.add_argument('--headless') 
