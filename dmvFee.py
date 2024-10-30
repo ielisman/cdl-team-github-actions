@@ -24,26 +24,43 @@ chromeOptions.add_argument("--disable-gpu")
 chromeOptions.add_argument("--no-sandbox")
 chromeOptions.add_argument("--disable-setuid-sandbox")
 chromeOptions.add_argument('--disable-dev-shm-usage')
-driver = uc.Chrome(headless=False,use_subprocess=True, options=chromeOptions, version_main=130)
+
+#chromeOptions.add_argument("--incognito")
+chromeOptions.add_argument("--ignore-certificate-errors")
+chromeOptions.add_argument("--disable-extensions")
+#chromeOptions.add_argument("--dns-prefetch-disable")
+#chromeOptions.add_argument("start-maximized")
+chromeOptions.add_argument('--ignore-ssl-errors=yes')
+#chromeOptions.add_argument("--disable-popup-blocking")
+chromeOptions.add_argument("--disable-notifications")
+
+driver = uc.Chrome(headless=False, use_subprocess=True, options=chromeOptions, version_main=130) #  
 
 try:
     
     driver.get("https://transact3.dmv.ny.gov/skillstestpayment/")
     WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.ID, "sClientID") ))
     driver.find_element(by=By.ID, value="sClientID").clear()
-    driver.find_element(by=By.ID, value="sClientID").send_keys("559471288")
-    Select(driver.find_element(by=By.ID, value="sDOBMonth")).select_by_value("11")
-    Select(driver.find_element(by=By.ID, value="sDOBDay")).select_by_value("14")
+    driver.find_element(by=By.ID, value="sClientID").send_keys("418079953")
+    Select(driver.find_element(by=By.ID, value="sDOBMonth")).select_by_value("02")
+    Select(driver.find_element(by=By.ID, value="sDOBDay")).select_by_value("15")
     driver.find_element(by=By.ID, value="sDOBYear").clear()
-    driver.find_element(by=By.ID, value="sDOBYear").send_keys("1988")
+    driver.find_element(by=By.ID, value="sDOBYear").send_keys("1997")
     driver.find_element(by=By.ID, value="sCDL").click()
     driver.find_element(by=By.ID, value="sEmailAddress").clear()
     driver.find_element(by=By.ID, value="sEmailAddress").send_keys("redhookcdl@gmail.com")
+    #driver.find_element(by=By.NAME, value="frmGetDrvInfo").click()
     driver.find_element(by=By.ID, value="sEmailAddress2").clear()
     driver.find_element(by=By.ID, value="sEmailAddress2").send_keys("redhookcdl@gmail.com")
-    # #driver.find_element_by_name("submit order").click()
-    # driver.find_element_by_name("submit order").click()
-    # #driver.get("https://api.convergepay.com/hosted-payments/")
+    s = driver.find_element(by=By.NAME, value="submit order")
+    #s.click()
+    #time.sleep(3)
+    #driver.find_element(by=By.NAME, value="frmGetDrvInfo").submit()
+    try: 
+        WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.NAME, "btnPrevious") ))
+    except Exception as e1:
+        print()
+    #driver.get("https://api.convergepay.com/hosted-payments/")
     # driver.find_element_by_xpath("//button[@id='id_checkout']/div").click()
     # #driver.find_element(by=By.ID, value="ssl_card_number").click()
     # driver.find_element(by=By.ID, value="ssl_card_number").clear()
@@ -73,7 +90,7 @@ try:
 except Exception as e:
     print(f"Exception occurred: {e}") 
 
-time.sleep(30)
+time.sleep(50)
 driver.quit()
 
 # chrome_options.add_argument('--headless') 
