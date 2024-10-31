@@ -1,4 +1,3 @@
-import keller_constants as const
 import firebase_admin
 import json
 import os
@@ -54,15 +53,15 @@ try:
       id = student_data['license_number']
       dob = student_data['dob']
       driver.get(os.environ['ROAD_TEST_URL'])
-      driver.find_element(by=By.ID, "input-57").clear()
-      driver.find_element(by=By.ID, "input-57").send_keys(id)
-      driver.find_element(by=By.ID, "input-61").clear()
-      driver.find_element(by=By.ID, "input-61").send_keys(dob)
-      driver.find_element(by=By.XPATH, ("//div[@id='app']/div/main/div/div[2]/div/form/div/div[4]/button/span").click()
+      driver.find_element(by=By.ID, value="input-57").clear()
+      driver.find_element(by=By.ID, value="input-57").send_keys(id)
+      driver.find_element(by=By.ID, value="input-61").clear()
+      driver.find_element(by=By.ID, value="input-61").send_keys(dob)
+      driver.find_element(by=By.XPATH, value="//div[@id='app']/div/main/div/div[2]/div/form/div/div[4]/button/span").click()
       # here retrieve date from web page (and RT class, i.e. Class A), if date matches today,
       result = "Passed"
       if (1==2):
-        driver.find_element(by=By.XPATH, ("//div[@id='app']/div/main/div/div[2]/div/div/div[2]/div/div/div/table/tbody/tr[2]/td[5]/span/a").click()
+        driver.find_element(by=By.XPATH, value="//div[@id='app']/div/main/div/div[2]/div/div/div[2]/div/div/div/table/tbody/tr[2]/td[5]/span/a").click()
         # parse results
         if student_schedule_map[id] is not None:
           doc_ref = schedule_ref.document(student_schedule_map[id])
