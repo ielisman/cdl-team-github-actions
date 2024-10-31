@@ -23,7 +23,6 @@ chromeOptions = webdriver.ChromeOptions()
 chromeOptions.add_argument("--disable-gpu")
 chromeOptions.add_argument("--no-sandbox")
 chromeOptions.add_argument("--disable-setuid-sandbox")
-chromeOptions.add_argument('--disable-dev-shm-usage')
 
 #chromeOptions.add_argument("--incognito")
 chromeOptions.add_argument("--ignore-certificate-errors")
@@ -33,43 +32,75 @@ chromeOptions.add_argument("--disable-extensions")
 chromeOptions.add_argument('--ignore-ssl-errors=yes')
 #chromeOptions.add_argument("--disable-popup-blocking")
 chromeOptions.add_argument("--disable-notifications")
+chromeOptions.add_argument('--disable-dev-shm-usage')
+#chromeOptions.add_argument('--headless=new')
+#chromeOptions.add_argument('--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"')
+#chromeOptions.add_argument("start-maximized")
 
-driver = uc.Chrome(headless=False, use_subprocess=True, options=chromeOptions, version_main=130) #  
+driver = uc.Chrome(headless=False, use_subprocess=True, options=chromeOptions, version_main=130) # headless=False,
+print("CAPABILITIES --\n")
+print (driver.capabilities)
+print("\nOPTIONS -- \n")
+print (driver.options.arguments)
 
 try:
     
-    driver.get("https://transact3.dmv.ny.gov/skillstestpayment/")
+    retries = 1
+    attempt = 0
+    site = "https://transact3.dmv.ny.gov/skillstestpayment/"
+    while attempt < retries:
+        try:
+            print (f"Retrieving site {site}. Attempt {attempt+1}")
+            driver.get(site)                            
+            break
+        except Exception as e0:
+            print(f"Unable to retrieve {site}: {e0}")
+            #driver.reconnect()                
+            attempt += 1
+            time.sleep(1)
+    else:
+        print(f"Unable to retrieve {site} after {attempt} attempts")
+        driver.quit()
+        exit(0)
+
+    print("Student form")
+
     WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.ID, "sClientID") ))
     driver.find_element(by=By.ID, value="sClientID").clear()
-    driver.find_element(by=By.ID, value="sClientID").send_keys("940273021")  # 418079953
-    Select(driver.find_element(by=By.ID, value="sDOBMonth")).select_by_value("03") # 02
-    Select(driver.find_element(by=By.ID, value="sDOBDay")).select_by_value("07") # 15
+    driver.find_element(by=By.ID, value="sClientID").send_keys("880748593")  # 418079953
+    Select(driver.find_element(by=By.ID, value="sDOBMonth")).select_by_value("06") # 02
+    Select(driver.find_element(by=By.ID, value="sDOBDay")).select_by_value("28") # 15
     driver.find_element(by=By.ID, value="sDOBYear").clear()
-    driver.find_element(by=By.ID, value="sDOBYear").send_keys("1974") # 1997
+    driver.find_element(by=By.ID, value="sDOBYear").send_keys("1987") # 1997
     driver.find_element(by=By.ID, value="sCDL").click()
     driver.find_element(by=By.ID, value="sEmailAddress").clear()
     driver.find_element(by=By.ID, value="sEmailAddress").send_keys("redhookcdl@gmail.com")  
     driver.find_element(by=By.ID, value="sEmailAddress2").clear()
     driver.find_element(by=By.ID, value="sEmailAddress2").send_keys("redhookcdl@gmail.com")
-    s = driver.find_element(by=By.NAME, value="submit order")
-  
+    # s = driver.find_element(by=By.NAME, value="submit order")    
+    
+    print("Filled out student form")
     driver.find_element(by=By.NAME, value="frmGetDrvInfo").submit()
+    
+    print("Verifying student form")
     try: 
         WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.NAME, "btnPrevious") ))
     except Exception as e1:
-        print()
+        print("Unable to verify student form")
     driver.find_element(by=By.NAME, value="frmVerify").submit() #by=By.NAME, value="submit order"
 
+    print("Entering payment form")
     try:
        WebDriverWait(driver, 20).until_not (EC.invisibility_of_element ( (By.XPATH, "//button[@id='id_checkout']/div") ))
     except Exception as e2:
-       print()
+       print("Unable to enter payment form")
     ###################### WORKS FINE UNDER DIFFERENT ENV: 
 
     #driver.find_element(by=By.NAME, value="id_checkout").click()
     #id_checkout
     driver.find_element(by=By.XPATH, value="//button[@id='id_checkout']/div").click()    
-        
+    
+    print("Payment form")
     driver.find_element(by=By.ID, value="ssl_card_number").clear()
     driver.find_element(by=By.ID, value="ssl_card_number").send_keys("$CN")
     driver.find_element(by=By.ID, value="ssl_exp_date").clear()
@@ -92,7 +123,10 @@ try:
     # driver.find_element(by=By.NAME, value="pmtFormCtrl.pmtForm").submit() 
     #driver.find_element(by=By.XPATH, value="//div[@id='id_main_left']/ng-include/div/div/form/div/div/div").click()
     #driver.find_element(by=By.XPATH, value="//div[@id='id_main_left']/ng-include/div/div/form/div/div/div").submit()
-    driver.find_element(by=By.XPATH, value="//button[@id='id_recaptcha']/div[1]/div[1]").click()
+
+
+    #driver.find_element(by=By.XPATH, value="//button[@id='id_recaptcha']/div[1]/div[1]").click()
+    print("Payment form is submitted")
 
     ##### POST RESULT
     # //*[@id="div-container"]/div/div[2]/div/div[1]  (/html/body/div[1]/div[5]/div/div[2]/div/div[1])
