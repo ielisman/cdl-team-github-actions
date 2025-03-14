@@ -19,35 +19,55 @@ from selenium.webdriver.support         import expected_conditions as EC
 from selenium.webdriver.support.ui      import WebDriverWait, Select
 from webdriver_manager.chrome           import ChromeDriverManager
 
-chromeOptions = webdriver.ChromeOptions()
-chromeOptions.add_argument("--disable-gpu")
+#chromeOptions = webdriver.ChromeOptions()
+#driver = uc.Chrome(headless=False, use_subprocess=True, options=chrome_options, version_main=130) # headless=False,
+
+
+# chromeOptions.add_argument("--disable-gpu")
+# chromeOptions.add_argument("--no-sandbox")
+# chromeOptions.add_argument("--disable-setuid-sandbox")
+
+# #chromeOptions.add_argument("--incognito") #
+# chromeOptions.add_argument("--ignore-certificate-errors")
+# chromeOptions.add_argument("--disable-extensions")
+# chromeOptions.add_argument("--dns-prefetch-disable")
+# #chromeOptions.add_argument("start-maximized") #
+# chromeOptions.add_argument('--ignore-ssl-errors=yes')
+# #chromeOptions.add_argument("--disable-popup-blocking") #
+# chromeOptions.add_argument("--disable-notifications")
+# chromeOptions.add_argument('--disable-dev-shm-usage')
+
+#chromeOptions.add_argument('--user-agent="Mozilla/132.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.91 Safari/537.36"')
+
+# print("CAPABILITIES --\n")
+# print (driver.capabilities)
+# print("\nOPTIONS -- \n")
+# print (driver.options.arguments)
+
+chromeOptions = uc.ChromeOptions()
+chromeOptions.headless = True
+chromeOptions.add_argument("--headless=new")  # Updated argument for headless mode
 chromeOptions.add_argument("--no-sandbox")
-chromeOptions.add_argument("--disable-setuid-sandbox")
+chromeOptions.add_argument("--disable-dev-shm-usage")
+chromeOptions.add_argument("--disable-gpu")
 
-#chromeOptions.add_argument("--incognito")
-chromeOptions.add_argument("--ignore-certificate-errors")
-chromeOptions.add_argument("--disable-extensions")
-#chromeOptions.add_argument("--dns-prefetch-disable")
 #chromeOptions.add_argument("start-maximized")
-chromeOptions.add_argument('--ignore-ssl-errors=yes')
-#chromeOptions.add_argument("--disable-popup-blocking")
-chromeOptions.add_argument("--disable-notifications")
-chromeOptions.add_argument('--disable-dev-shm-usage')
-#chromeOptions.add_argument('--headless=new')
-#chromeOptions.add_argument('--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"')
-#chromeOptions.add_argument("start-maximized")
+#chromeOptions.add_argument("disable-infobars")
+#chromeOptions.add_argument("--disable-extensions")
 
-driver = uc.Chrome(headless=False, use_subprocess=True, options=chromeOptions, version_main=130) # headless=False,
-print("CAPABILITIES --\n")
-print (driver.capabilities)
-print("\nOPTIONS -- \n")
-print (driver.options.arguments)
+chromeOptions.add_argument("--disable-blink-features")
+chromeOptions.add_argument("--disable-blink-features=AutomationControlled")
+chromeOptions.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36")
+driver = uc.Chrome(options=chromeOptions, use_subprocess=True, version_main=130)
+
+driver.implicitly_wait(30)
+driver.set_page_load_timeout(30)
 
 try:
     
-    retries = 1
+    retries = 3
     attempt = 0
-    site = "https://transact3.dmv.ny.gov/skillstestpayment/"
+    site = "https://transact3.dmv.ny.gov/skillstestpayment/" # "https://nowsecure.nl"
     while attempt < retries:
         try:
             print (f"Retrieving site {site}. Attempt {attempt+1}")
@@ -55,7 +75,8 @@ try:
             break
         except Exception as e0:
             print(f"Unable to retrieve {site}: {e0}")
-            #driver.reconnect()                
+            #driver.reconnect()
+            #driver.refresh()
             attempt += 1
             time.sleep(1)
     else:
@@ -137,7 +158,7 @@ try:
 except Exception as e:
     print(f"Exception occurred: {e}") 
 
-time.sleep(350)
+time.sleep(50)
 driver.quit()
 
 # chrome_options.add_argument('--headless') 
