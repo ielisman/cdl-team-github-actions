@@ -11,6 +11,7 @@ from webdriver_manager.chrome           import ChromeDriverManager
 
 chrome_options = webdriver.ChromeOptions()
 # chrome_options.add_argument('--headless')
+chrome_options.add_argument('--start-maximized') 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 try:
@@ -183,3 +184,101 @@ driver.quit()
 #   </div>
 #  </div>
 # </div>
+
+# ----------------- arrow back
+# <div unselectable="on" class="navigator_transparent_titleleft" style="position: absolute; left: 0px; top: 0px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><span>&lt;</span></div>
+
+# ----------------- arrow front
+# <div unselectable="on" class="navigator_transparent_titleright" style="position: absolute; left: 120px; top: 0px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><span>&gt;</span></div>
+
+# ----------------- Today's date
+# <div class="navigator_transparent_day navigator_transparent_cell navigator_transparent_today navigator_transparent_dayother navigator_transparent_select" unselectable="on" style="position: absolute; left: 60px; top: 100px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_todaybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">20</div></div>
+
+# ----------------- First available non-green date
+# <div class="navigator_transparent_day navigator_transparent_cell" unselectable="on" style="position: absolute; left: 20px; top: 120px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">25</div></div>
+
+# ----------------- First available green date
+# <div class="navigator_transparent_day navigator_transparent_cell navigator_transparent_busy" unselectable="on" style="position: absolute; left: 0px; top: 140px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">31</div></div>
+
+# ----------------- First available green date with time slots (dayother means other month if we are in prev month)
+# <div class="navigator_transparent_dayother navigator_transparent_cell navigator_transparent_busy" unselectable="on" style="position: absolute; left: 80px; top: 140px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">4</div></div>
+
+# ----------------- Date of time slots
+# <legend class="fwd">Available Appointments: <span id="MainContent_lblDeailsBookDate">04/04/2025</span></legend>
+
+# ----------------- Table of time slots
+# <table id="MainContent_dlDetailsSlots" class="datalist-item" cellspacing="0" style="border-collapse:collapse;">
+# 				<tbody><tr>
+# 					<td>
+#                                                 <div class="schedule-time-slot">
+#                                                     <span id="MainContent_dlDetailsSlots_lblDetailsTimeSlot_0" class="js-schedule-time-slot" data-slotid="3046034">12:45 PM </span>
+#                                                 </div>
+#                                             </td><td>
+#                                                 <div class="schedule-time-slot">
+#                                                     <span id="MainContent_dlDetailsSlots_lblDetailsTimeSlot_1" class="js-schedule-time-slot" data-slotid="3046033">02:00 PM (2.00)</span>
+#                                                 </div>
+#                                             </td><td></td><td></td><td></td><td></td><td></td><td></td>
+# 				</tr>
+# 			</tbody></table>
+
+# ----------------- Showing message that No appointments are available (parent: <fieldset class="size99pct">)
+# <div class="error-message ">
+#  <span class="error-message-label">No appointments for test type CDL A are available for the selected date.</span>
+# </div>
+
+# Change between RT sites
+# <select name="ctl00$MainContent$ddlDetailTestSiteId" onchange="javascript:setTimeout('__doPostBack(\'ctl00$MainContent$ddlDetailTestSiteId\',\'\')', 0)" id="MainContent_ddlDetailTestSiteId" class="width99pct">
+# 				<option value="">SELECT...</option>
+# 				<option value="3358">3rd Party Bronx CDL Training Center</option>
+# 				<option value="3366">3rd Party First Student BKLN</option>
+# 				<option value="3341">3rd Party Greece CSD CDL</option>
+# 				<option value="3335">3rd Party Huntington Coach E. Northport CDL</option>
+# 				<option value="3332">3rd Party Huntington Coach-Hempstead CDL</option>
+# 				<option value="240">3rd Party Vehicle Driving Program Wyandanch</option>
+# 				<option value="194">3rd Party We Transport CDL Elmont</option>
+# 				<option value="3191">Aqueduct CDL</option>
+# 				<option value="2945">Auburn CDL</option>
+# 				<option value="3004">Brewster CDL</option>
+# 				<option value="5444">Bronx CDL 2- Alexander Ave</option>
+# 				<option value="904">Catskill CDL</option>
+# 				<option value="2704">Cobleskill CDL</option>
+# 				<option value="3165">College point CDL</option>
+# 				<option value="1220">Coopers Plains CDL</option>
+# 				<option value="8">East Patchogue CDL</option>
+# 				<option value="3185">Endicott CDL</option>
+# 				<option selected="selected" value="2964">Fresh Kills CDL</option>
+# 				<option value="3186">Geneva CDL</option>
+# 				<option value="2185">Glen CDL</option>
+# 				<option value="1904">Glens Falls CDL</option>
+# 				<option value="3124">Goshen CDL</option>
+# 				<option value="1405">IPARK84 CDL</option>
+# 				<option value="2764">Jamestown CDL</option>
+# 				<option value="872">Johnstown</option>
+# 				<option value="2804">Kingston CDL</option>
+# 				<option value="2805">Kingston CDL/NYS Thruway</option>
+# 				<option value="2802">Kingston Plaza CDL</option>
+# 				<option value="8485">Leroy CDL</option>
+# 				<option value="8000000">Lowville CDL</option>
+# 				<option value="2947">Massena CDL</option>
+# 				<option value="2924">Monticello CDL</option>
+# 				<option value="3194">Nassau CC CDL</option>
+# 				<option value="1447">Newburgh CDL NYS Thruway Exit 17</option>
+# 				<option value="2787">Ogdensburg CDL</option>
+# 				<option value="99999999">Oneonta CDL</option>
+# 				<option value="1964">Orangeburg CDL</option>
+# 				<option value="3084">Oswego CDL</option>
+# 				<option value="2864">Plattsburgh CDL</option>
+# 				<option value="2021">Raceway CDL</option>
+# 				<option value="878">Rochester CDL</option>
+# 				<option value="2950">Sanborn CDL</option>
+# 				<option value="8781">Schenectady Co Airport CDL</option>
+# 				<option value="34">South Hicksville CDL</option>
+# 				<option value="42">Syosset CDL</option>
+# 				<option value="1124">Syracuse CDL</option>
+# 				<option value="108">Tarrytown CDL</option>
+# 				<option value="3189">Uniondale CDL</option>
+# 				<option value="3024">Warsaw CDL</option>
+# 				<option value="2946">Watertown CDL</option>
+# 				<option value="2904">West Seneca CDL</option>
+# 				<option value="2944">Westmoreland Thruway Tandem Lot CDL</option>
+# 			</select>
