@@ -1,8 +1,9 @@
+import random
 import time
 import traceback
 
 from selenium                           import webdriver
-from selenium.common.exceptions         import WebDriverException, NoSuchElementException
+from selenium.common.exceptions         import WebDriverException, NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.service  import Service
 from selenium.webdriver.common.by       import By
 from selenium.webdriver.support         import expected_conditions as EC
@@ -72,7 +73,7 @@ try:
     # Here we can interfere by hand in case captcha appears
     # We will check for the element of captcha. If exists, we will explicitly wait until it is solved
     sitesSelect = Select(driver.find_element(by=By.ID, value="MainContent_ddlTestSiteId")) # Select test site
-    sitesSelect.select_by_visible_text("Nassau CC CDL")
+    sitesSelect.select_by_visible_text("Fresh Kills CDL") # "Nassau CC CDL
 
     driver.find_element(By.ID, value="btnScheduleBookings").click() # Click schedule bookings button
 
@@ -125,10 +126,67 @@ try:
     except TimeoutException:
         print("Timeout: Element 'MainContent_vsClientInfoDlgOkMsg' cannot find such text.")
     except Exception as e:
-        print(f"MainContent_vsClientInfoDlgOkMsg Exception occurred: {e}")    
+        print(f"MainContent_vsClientInfoDlgOkMsg Exception occurred: {e}")
+
+    # MainContent_lblDetailsNote
+    try:
+        # Wait for the element to be visible and interactable
+        print ("Ensuring that we get to calendar page")
+        WebDriverWait(driver, 60).until(
+            EC.text_to_be_present_in_element((By.ID, "MainContent_lblDetailsNote"), "Your account may hold up to")
+        )
+        print ("Found text - Your account may hold up to ... Proceeding")   
+    except TimeoutException:
+        print("Timeout: Element 'MainContent_lblDetailsNote' cannot find such text.")
+    except Exception as e:
+        print(f"MainContent_lblDetailsNote Exception occurred: {e}")
+
+    # MainContent_lblDetailsNote
+    try:
+        # Wait for the element to be visible and interactable
+        print ("Ensuring that we get to calendar page")
+        WebDriverWait(driver, 60).until(
+            EC.text_to_be_present_in_element((By.ID, "MainContent_lblDetailsNote"), "Your account may hold up to")
+        )
+        print ("Found text - Your account may hold up to ... Proceeding")   
+    except TimeoutException:
+        print("Timeout: Element 'MainContent_lblDetailsNote' cannot find such text.")
+    except Exception as e:
+        print(f"MainContent_lblDetailsNote Exception occurred: {e}")
+
+    div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
+
+
+    # Loop until div_busy_elements are found
+    div_busy_elements = []
+    while not div_busy_elements:
+        div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
+        if not div_busy_elements:
+            # check next month, then go back to previous month. Check another location and repeat
+            print("No div_busy elements found. Retrying...")
+            sleeping = random.randint(2, 10)
+            print(f"Sleeping for {sleeping} seconds...")
+            time.sleep(sleeping)  # Sleep for a random interval between 3 and 15 seconds
+        else:
+            print(f"Found {len(div_busy_elements)} div.navigator_transparent_busy elements.")
+            for div in div_busy_elements:
+                try:
+                    # Find the innermost div containing the number
+                    inner_div = div.find_element(By.XPATH, ".//div[contains(@class, 'navigator_transparent_cell_text')]")
+                    number = inner_div.text.strip()  # Extract the text and remove any extra spaces
+                    print(f"Number found: {number}")
+                    div.click()  # Click on the div to select the date
+                    print (f"Clicked on {number}")
+                    sleeping = random.randint(1, 3)
+                    print(f"Sleeping for {sleeping} seconds...")
+                except Exception as e:
+                    print(f"Error while processing element: {e}")
+                    continue
+    
 
 except Exception as e:
     print(f"Exception occurred: {e}")
+    exit(1)
 
 time.sleep(300)
 driver.quit()
@@ -195,10 +253,10 @@ driver.quit()
 # <div class="navigator_transparent_day navigator_transparent_cell navigator_transparent_today navigator_transparent_dayother navigator_transparent_select" unselectable="on" style="position: absolute; left: 60px; top: 100px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_todaybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">20</div></div>
 
 # ----------------- First available non-green date
-# <div class="navigator_transparent_day navigator_transparent_cell" unselectable="on" style="position: absolute; left: 20px; top: 120px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">25</div></div>
+# <div class="navigator_transparent_day      navigator_transparent_cell"                            unselectable="on" style="position: absolute; left: 20px; top: 120px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">25</div></div>
 
 # ----------------- First available green date
-# <div class="navigator_transparent_day navigator_transparent_cell navigator_transparent_busy" unselectable="on" style="position: absolute; left: 0px; top: 140px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">31</div></div>
+# <div class="navigator_transparent_day      navigator_transparent_cell navigator_transparent_busy" unselectable="on" style="position: absolute; left: 0px;  top: 140px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">31</div></div>
 
 # ----------------- First available green date with time slots (dayother means other month if we are in prev month)
 # <div class="navigator_transparent_dayother navigator_transparent_cell navigator_transparent_busy" unselectable="on" style="position: absolute; left: 80px; top: 140px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">4</div></div>
