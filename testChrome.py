@@ -154,7 +154,7 @@ try:
     except Exception as e:
         print(f"MainContent_lblDetailsNote Exception occurred: {e}")
 
-    div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
+    #div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
 
 
     # Loop until div_busy_elements are found
@@ -162,27 +162,45 @@ try:
     while not div_busy_elements:
         div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
         if not div_busy_elements:
-            # check next month, then go back to previous month. Check another location and repeat
             print("No div_busy elements found. Retrying...")
-            sleeping = random.randint(2, 10)
+            time.sleep(random.randint(3, 15))  # Sleep for a random interval between 3 and 15 seconds
+
+    print(f"Found {len(div_busy_elements)} div_busy elements.")
+
+    # Create a list of tuples (index, number) for sorting
+    div_with_numbers = []
+
+    for index, div in enumerate(div_busy_elements):
+        try:
+            # Find the innermost div containing the number
+            inner_div = div.find_element(By.XPATH, ".//div[contains(@class, 'navigator_transparent_cell_text')]")
+            number = int(inner_div.text.strip())  # Extract the number and convert it to an integer
+            div_with_numbers.append((index, number))  # Append the tuple (index, number)
+        except Exception as e:
+            print(f"Error while processing element: {e}")
+            continue
+
+    # Sort the list of tuples by the number in ascending order
+    div_with_numbers.sort(key=lambda x: x[1])
+
+    # Iterate through the sorted div elements
+    for index, number in div_with_numbers:
+        try:
+            # Re-fetch the div element by index to avoid stale element reference
+            div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
+            div = div_busy_elements[index]  # Get the fresh element
+
+            print(f"Number found: {number}")
+            div.click()  # Click on the div to select the date
+            print(f"Clicked on {number}")
+
+            # Sleep for a random interval between 1 and 3 seconds
+            sleeping = random.randint(1, 3)
             print(f"Sleeping for {sleeping} seconds...")
-            time.sleep(sleeping)  # Sleep for a random interval between 3 and 15 seconds
-        else:
-            print(f"Found {len(div_busy_elements)} div.navigator_transparent_busy elements.")
-            for div in div_busy_elements:
-                try:
-                    # Find the innermost div containing the number
-                    inner_div = div.find_element(By.XPATH, ".//div[contains(@class, 'navigator_transparent_cell_text')]")
-                    number = inner_div.text.strip()  # Extract the text and remove any extra spaces
-                    print(f"Number found: {number}")
-                    div.click()  # Click on the div to select the date
-                    print (f"Clicked on {number}")
-                    sleeping = random.randint(1, 3)
-                    print(f"Sleeping for {sleeping} seconds...")
-                except Exception as e:
-                    print(f"Error while processing element: {e}")
-                    continue
-    
+            time.sleep(sleeping)
+        except Exception as e:
+            print(f"Error while processing element: {e}")
+            continue
 
 except Exception as e:
     print(f"Exception occurred: {e}")
