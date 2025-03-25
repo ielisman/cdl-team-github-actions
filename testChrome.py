@@ -154,18 +154,17 @@ try:
     except Exception as e:
         print(f"MainContent_lblDetailsNote Exception occurred: {e}")
 
-    #div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
-
-
     # Loop until div_busy_elements are found
     div_busy_elements = []
     while not div_busy_elements:
         div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
         if not div_busy_elements:
+            # TODO go to next month and see if we can find any div_busy elements. 
+            # TODO Probably, create nxtmon_div_busy_elements and nxtmon_div_with_numbers variables
             print("No div_busy elements found. Retrying...")
             time.sleep(random.randint(3, 15))  # Sleep for a random interval between 3 and 15 seconds
 
-    print(f"Found {len(div_busy_elements)} div_busy elements.")
+    print(f"Found {len(div_busy_elements)} div_busy elements.")    
 
     # Create a list of tuples (index, number) for sorting
     div_with_numbers = []
@@ -188,7 +187,11 @@ try:
         try:
             # Re-fetch the div element by index to avoid stale element reference
             div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
-            div = div_busy_elements[index]  # Get the fresh element
+            try:
+                div = div_busy_elements[index]  # Get the fresh element
+            except IndexError:
+                print(f"IndexError: div_busy_elements list has changed. Skipping index {index}.")
+                continue            
 
             print(f"Number found: {number}")
             div.click()  # Click on the div to select the date
@@ -201,6 +204,8 @@ try:
         except Exception as e:
             print(f"Error while processing element: {e}")
             continue
+    
+    # TODO go to next month and see if we can find more of div_busy elements
 
 except Exception as e:
     print(f"Exception occurred: {e}")
