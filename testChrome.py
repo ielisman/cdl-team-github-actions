@@ -10,209 +10,207 @@ from selenium.webdriver.support         import expected_conditions as EC
 from selenium.webdriver.support.ui      import WebDriverWait, Select
 from webdriver_manager.chrome           import ChromeDriverManager
 
-chrome_options = webdriver.ChromeOptions()
-# chrome_options.add_argument('--headless')
-chrome_options.add_argument('--start-maximized') 
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
-try:
-    # LOGIN
-    driver.get("https://www.nyakts.com/Login.aspx?mid=2269") # Navigate to login page
-    # driver.get("https://www.nyakts.com/NyRstApps/ThirdPartyBooking.aspx?mid=2269")    
-    driver.find_element(by=By.ID, value="UserName").clear() # Clear username field
-    driver.find_element(by=By.ID, value="Password").clear() # Clear password field
-    driver.find_element(by=By.ID, value="UserName").send_keys("7583ds") # Enter username
-    driver.find_element(by=By.ID, value="Password").send_keys("Ditmas_201!") # Enter password
-    driver.find_element(by=By.ID, value="Login1_btnPreLoginButton").click() # Click login button
+def setup_driver():
+    chrome_options = webdriver.ChromeOptions()
+    # chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--start-maximized')
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    return driver
 
-    cancelOtherSession = False
+def login(driver, username, password):
+    driver.get("https://www.nyakts.com/Login.aspx?mid=2269")
+    driver.find_element(by=By.ID, value="UserName").clear()
+    driver.find_element(by=By.ID, value="Password").clear()
+    driver.find_element(by=By.ID, value="UserName").send_keys(username)
+    driver.find_element(by=By.ID, value="Password").send_keys(password)
+    driver.find_element(by=By.ID, value="Login1_btnPreLoginButton").click()
+
     try:
-        loginContinueMessage = driver.find_element(by=By.ID, value="continueMessage") # Check for existing session message
-        if loginContinueMessage.text == "If you continue, their session will be lost. Would you like to continue?":
-            print(f"Found loginContinueMessage {loginContinueMessage.text}")
-        driver.find_element(by=By.ID, value="confirmDialog").click() # Confirm to cancel other session
-        print(f"Found existing session. Cancelling it")
-        cancelOtherSession = True
-    except Exception as es:
-        print(f"No session to cancel. Continuing")
+        login_continue_message = driver.find_element(by=By.ID, value="continueMessage")
+        if login_continue_message.text == "If you continue, their session will be lost. Would you like to continue?":
+            print(f"Found loginContinueMessage {login_continue_message.text}")
+            driver.find_element(by=By.ID, value="confirmDialog").click()
+            print("Found existing session. Cancelling it")
+    except NoSuchElementException:
+        print("No session to cancel. Continuing")
 
-    driver.get("https://www.nyakts.com/NyRstApps/ThirdPartyBooking.aspx?mid=2269") # Navigate to booking page    
+def navigate_to_booking_page(driver, url):
+    print ("Navigating to booking page")
+    driver.get(url)
+    try:        
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.XPATH, ".//iframe[@title='reCAPTCHA']"))
+        )
+        print("Found reCAPTCHA frame")
+    except Exception as e:
+        try:
+            print("Did not find repCAPTCHA frame. Clicking on 'Scheduling' link")
+            WebDriverWait(driver, 100).until(EC.presence_of_element_located((By.ID, "hl_customMenu2269")))
+            driver.find_element(by=By.ID, value="hl_customMenu2269").click()
+            print("Clicked on 'Scheduling' link")
+        except TimeoutException:
+            print("Timeout: Element 'hl_customMenu2269' not found after waiting.")
+        except Exception as e:
+            print(f"Exception occurred: {e}")
+            exit(1)
 
-    # driver.switch_to.default_content()
-    try:  
+def solve_recaptcha(driver):
+    try:
         print("Finding reCAPTCHA frame")
         WebDriverWait(driver, 100).until(
-            EC.presence_of_element_located(
-                (By.XPATH, ".//iframe[@title='reCAPTCHA']")
-            )
+            EC.presence_of_element_located((By.XPATH, ".//iframe[@title='reCAPTCHA']"))
         )
-        driver.switch_to.frame(driver.find_element(By.XPATH, value=".//iframe[@title='reCAPTCHA']")) # Switch to reCAPTCHA frame
+        driver.switch_to.frame(driver.find_element(By.XPATH, value=".//iframe[@title='reCAPTCHA']"))
         print("Switched to reCAPTCHA frame")
-    except Exception as e:
-        print(f"Exception while switching to reCAPTCHA frame: {e}")
-    
-    # recaptcha-checkbox-checkmark
-    try:  
-        print("recaptchaCheckBox - checking state if clicked")              
-        recaptchaCheckBox = driver.find_element(by=By.ID, value="recaptcha-anchor")
-        recaptchaCheckBox.click()
+
+        print("recaptchaCheckBox - checking state if clicked")
+        recaptcha_checkbox = driver.find_element(by=By.ID, value="recaptcha-anchor")
+        recaptcha_checkbox.click()
         WebDriverWait(driver, 90).until(
             EC.text_to_be_present_in_element_attribute(
-                (By.ID, "recaptcha-anchor"),
-                "aria-checked",
-                "true")
-        ) # Wait until reCAPTCHA is checked
-        print("recaptchaCheckBox - checked")         
+                (By.ID, "recaptcha-anchor"), "aria-checked", "true"
+            )
+        )
+        print("recaptchaCheckBox - checked")
     except Exception as e:
-        print(f"Recaptcha is not checked. Exception occured", e)
+        print(f"Recaptcha is not checked. Exception occurred: {e}")
         traceback.print_exc()
         exit(1)
+    finally:
+        driver.switch_to.default_content()
 
-    driver.switch_to.default_content()
+def select_test_site(driver, site_name):
+    sites_select = Select(driver.find_element(by=By.ID, value="MainContent_ddlTestSiteId"))
+    sites_select.select_by_visible_text(site_name)
+    driver.find_element(By.ID, value="btnScheduleBookings").click()
 
-    # Here we can interfere by hand in case captcha appears
-    # We will check for the element of captcha. If exists, we will explicitly wait until it is solved
-    sitesSelect = Select(driver.find_element(by=By.ID, value="MainContent_ddlTestSiteId")) # Select test site
-    sitesSelect.select_by_visible_text("Fresh Kills CDL") # "Nassau CC CDL
-
-    driver.find_element(By.ID, value="btnScheduleBookings").click() # Click schedule bookings button
-
+def enter_cid_dob_cdlclass(driver, cid, dob, cdlclass):
     try:
-        # Wait for the element to be visible and interactable
         WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, "txtCidDlgCid1"))
         )
-        # Clear the input field
         driver.find_element(By.ID, value="txtCidDlgCid1").clear()
-        driver.find_element(By.ID, value="txtCidDlgCid1").send_keys("910840069") # Enter CID
+        driver.find_element(By.ID, value="txtCidDlgCid1").send_keys(cid)
     except TimeoutException:
         print("Timeout: Element 'txtCidDlgCid1' not interactable after waiting.")
     except Exception as e:
         print(f"Exception occurred: {e}")
-
-    driver.find_element(By.ID, value="txtCidDlgDob1").clear() # Clear DOB field    
-    driver.find_element(By.ID, value="txtCidDlgDob1").send_keys("06/29/1988") # Enter DOB
-    cdlClassSelect = Select(driver.find_element(by=By.ID, value="ddlCidDlgTestType1")) # Select CDL class
-    cdlClassSelect.select_by_visible_text("CDL A (Class A CDL)")
-
     try:
-        # Wait for the element to be visible and interactable
-        WebDriverWait(driver, 60).until(
-            EC.element_to_be_clickable((By.ID, "chkClientInfoDlg"))
-        )        
-        driver.find_element(By.ID, value="chkClientInfoDlg").click() # Click client info checkbox
+        WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "txtCidDlgDob1"))
+        )
+        driver.find_element(By.ID, value="txtCidDlgDob1").clear()
+        driver.find_element(By.ID, value="txtCidDlgDob1").send_keys(dob)
+    except TimeoutException:
+        print("Timeout: Element 'txtCidDlgDob1' not interactable after waiting.")
+    except Exception as e:
+        print(f"Exception occurred: {e}")
+    
+    cdlClassSelect = Select(driver.find_element(by=By.ID, value="ddlCidDlgTestType1")) # Select CDL class
+    cdlClassSelect.select_by_visible_text(cdlclass)    
+
+def check_eligibility(driver):
+    try:        
+        WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.ID, "chkClientInfoDlg")))        
+        driver.find_element(By.ID, value="chkClientInfoDlg").click() 
     except TimeoutException:
         print("Timeout: Element 'chkClientInfoDlg' not interactable after waiting.")
     except Exception as e:
         print(f"chkClientInfoDlg Exception occurred: {e}")
-
-    # btnClientInfoDlgCheckEligibility
+    
     driver.find_element(By.ID, value="btnClientInfoDlgCheckEligibility").click()
-
     okMsg  = driver.find_element(By.ID, value="MainContent_vsClientInfoDlgOkMsg")
     errMsg = driver.find_element(By.ID, value="MainContent_vsClientInfoDlgErrMsg")
-
-    # MainContent_vsClientInfoDlgErrMsg
-    # MainContent_vsClientInfoDlgOkMsg
-
     try:
-        # Wait for the element to be visible and interactable
         print ("Checking for All CIDs are eligible")
         WebDriverWait(driver, 60).until(
             EC.text_to_be_present_in_element((By.ID, "MainContent_vsClientInfoDlgOkMsg"), "All CIDs are eligible")
         )
         print ("Found text - All CIDs are eligible. Proceeding")   
-        driver.find_element(By.ID, value="btnClientInfoDlgContinue").click() # Click to continue
+        driver.find_element(By.ID, value="btnClientInfoDlgContinue").click()
     except TimeoutException:
         print("Timeout: Element 'MainContent_vsClientInfoDlgOkMsg' cannot find such text.")
     except Exception as e:
         print(f"MainContent_vsClientInfoDlgOkMsg Exception occurred: {e}")
 
-    # MainContent_lblDetailsNote
+    try:        
+        WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.ID, "chkClientInfoDlg")))        
+        driver.find_element(By.ID, value="chkClientInfoDlg").click()
+    except TimeoutException:
+        print("Timeout: Element 'chkClientInfoDlg' not interactable after waiting.")
+    except Exception as e:
+        print(f"chkClientInfoDlg Exception occurred: {e}")
+
+def wait_for_calendar_page(driver):
     try:
-        # Wait for the element to be visible and interactable
-        print ("Ensuring that we get to calendar page")
         WebDriverWait(driver, 60).until(
             EC.text_to_be_present_in_element((By.ID, "MainContent_lblDetailsNote"), "Your account may hold up to")
         )
-        print ("Found text - Your account may hold up to ... Proceeding")   
+        print("Found text - Your account may hold up to ... Proceeding")
     except TimeoutException:
         print("Timeout: Element 'MainContent_lblDetailsNote' cannot find such text.")
     except Exception as e:
-        print(f"MainContent_lblDetailsNote Exception occurred: {e}")
+        print(f"MainContent_lblDetailsNote Exception occurred: {e}")   
 
-    # MainContent_lblDetailsNote
-    try:
-        # Wait for the element to be visible and interactable
-        print ("Ensuring that we get to calendar page")
-        WebDriverWait(driver, 60).until(
-            EC.text_to_be_present_in_element((By.ID, "MainContent_lblDetailsNote"), "Your account may hold up to")
-        )
-        print ("Found text - Your account may hold up to ... Proceeding")   
-    except TimeoutException:
-        print("Timeout: Element 'MainContent_lblDetailsNote' cannot find such text.")
-    except Exception as e:
-        print(f"MainContent_lblDetailsNote Exception occurred: {e}")
-
-    # Loop until div_busy_elements are found
+def process_calendar(driver):
     div_busy_elements = []
     while not div_busy_elements:
         div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
         if not div_busy_elements:
-            # TODO go to next month and see if we can find any div_busy elements. 
-            # TODO Probably, create nxtmon_div_busy_elements and nxtmon_div_with_numbers variables
             print("No div_busy elements found. Retrying...")
-            time.sleep(random.randint(3, 15))  # Sleep for a random interval between 3 and 15 seconds
+            time.sleep(random.randint(3, 15))
 
-    print(f"Found {len(div_busy_elements)} div_busy elements.")    
-
-    # Create a list of tuples (index, number) for sorting
+    print(f"Found {len(div_busy_elements)} div_busy elements.")
     div_with_numbers = []
 
     for index, div in enumerate(div_busy_elements):
         try:
-            # Find the innermost div containing the number
             inner_div = div.find_element(By.XPATH, ".//div[contains(@class, 'navigator_transparent_cell_text')]")
-            number = int(inner_div.text.strip())  # Extract the number and convert it to an integer
-            div_with_numbers.append((index, number))  # Append the tuple (index, number)
+            number = int(inner_div.text.strip())
+            div_with_numbers.append((index, number))
         except Exception as e:
             print(f"Error while processing element: {e}")
             continue
 
-    # Sort the list of tuples by the number in ascending order
     div_with_numbers.sort(key=lambda x: x[1])
 
-    # Iterate through the sorted div elements
     for index, number in div_with_numbers:
         try:
-            # Re-fetch the div element by index to avoid stale element reference
             div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
             try:
-                div = div_busy_elements[index]  # Get the fresh element
+                div = div_busy_elements[index]
             except IndexError:
                 print(f"IndexError: div_busy_elements list has changed. Skipping index {index}.")
-                continue            
+                continue
 
             print(f"Number found: {number}")
-            div.click()  # Click on the div to select the date
+            div.click()
             print(f"Clicked on {number}")
-
-            # Sleep for a random interval between 1 and 3 seconds
-            sleeping = random.randint(1, 3)
-            print(f"Sleeping for {sleeping} seconds...")
-            time.sleep(sleeping)
+            time.sleep(random.randint(1, 3))
         except Exception as e:
             print(f"Error while processing element: {e}")
-            continue
-    
-    # TODO go to next month and see if we can find more of div_busy elements
+            continue              
 
-except Exception as e:
-    print(f"Exception occurred: {e}")
-    exit(1)
+def main():
+    driver = setup_driver()
+    try:
+        login(driver, "7583ds", "Ditmas_201!")
+        navigate_to_booking_page(driver, "https://www.nyakts.com/NyRstApps/ThirdPartyBooking.aspx?mid=2269")
+        solve_recaptcha(driver)
+        select_test_site(driver, "Fresh Kills CDL")
+        enter_cid_dob_cdlclass(driver, "910840069", "06/29/1988", "CDL A (Class A CDL)")
+        check_eligibility(driver)
+        wait_for_calendar_page(driver)
+        process_calendar(driver)
+    except Exception as e:
+        print(f"Exception occurred: {e}")
+    finally:
+        time.sleep(300)
+        driver.quit()
 
-time.sleep(300)
-driver.quit()
+if __name__ == "__main__":
+    main()
 
 # <span class="recaptcha-checkbox goog-inline-block recaptcha-checkbox-unchecked rc-anchor-checkbox
 #            aria-checked="false"
