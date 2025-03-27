@@ -11,9 +11,21 @@ from selenium.webdriver.support         import expected_conditions as EC
 from selenium.webdriver.support.ui      import WebDriverWait, Select
 from webdriver_manager.chrome           import ChromeDriverManager
 
+from selenium_recaptcha_solver          import RecaptchaSolver
+
+
+# 1. https://www.python.org/downloads (Check the box "Add Python to PATH" or do it manually. python --version)
+# 2. https://ffmpeg.org/download.html (download and extract to a folder, add the folder to PATH. ffmpeg -version)
+# 3. pip install selenium webdriver-manager selenium-recaptcha-solver ffmpeg (pip show selenium ffmpeg ...)
+#    optional: python -m pip install --upgrade pip
 
 def setup_driver():
     chrome_options = webdriver.ChromeOptions()
+
+    # user_profile = os.environ.get("USERPROFILE") # for Buster Chrome Extension but shadow elements doesn't work
+    # buster_extension_path = os.path.join(user_profile,"AppData","Local","Google","Chrome","User Data","Profile 4","Extensions","mpbjkejclgfgadiemmefgebjfooflfhl", "3.1.0_0")
+    # chrome_options.add_argument(f"--load-extension={buster_extension_path}")
+
     # chrome_options.add_argument('--headless')
     # chrome_options.add_argument('--start-maximized')
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
@@ -40,7 +52,7 @@ def navigate_to_booking_page(driver, url):
     print ("Navigating to booking page")
     driver.get(url)
     try:        
-        WebDriverWait(driver, 30).until(
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.XPATH, ".//iframe[@title='reCAPTCHA']"))
         )
         print("Found reCAPTCHA frame")
@@ -53,35 +65,20 @@ def navigate_to_booking_page(driver, url):
         except TimeoutException:
             print("Timeout: Element 'hl_customMenu2269' not found after waiting.")
         except Exception as e:
-            print(f"Exception occurred: {e}")
+            print(f"navigate_to_booking_page Exception occurred: {e}")
             exit(1)
 
 def solve_recaptcha(driver):
     try:
-        print("Finding reCAPTCHA frame")
-        WebDriverWait(driver, 100).until(
-            EC.presence_of_element_located((By.XPATH, ".//iframe[@title='reCAPTCHA']"))
-        )
-        driver.switch_to.frame(driver.find_element(By.XPATH, value=".//iframe[@title='reCAPTCHA']"))
-        print("Switched to reCAPTCHA frame")
-
-        print("recaptchaCheckBox - checking state if clicked")
-        recaptcha_checkbox = driver.find_element(by=By.ID, value="recaptcha-anchor")
-        recaptcha_checkbox.click()
-        WebDriverWait(driver, 90).until(
-            EC.text_to_be_present_in_element_attribute(
-                (By.ID, "recaptcha-anchor"), "aria-checked", "true"
-            )
-        )
-        print("recaptchaCheckBox - checked")
+        solver = RecaptchaSolver(driver=driver)
+        recaptcha_iframe = driver.find_element(By.XPATH, './/iframe[@title="reCAPTCHA"]')
+        solver.click_recaptcha_v2(iframe=recaptcha_iframe)        
     except Exception as e:
-        print(f"Recaptcha is not checked. Exception occurred: {e}")
-        traceback.print_exc()
-        exit(1)
+        print(f"solve_recaptcha Exception occurred")
     finally:
         driver.switch_to.default_content()
 
-def select_test_site(driver, site_name):
+def select_test_site(driver, site_name):    
     sites_select = Select(driver.find_element(by=By.ID, value="MainContent_ddlTestSiteId"))
     sites_select.select_by_visible_text(site_name)
     driver.find_element(By.ID, value="btnScheduleBookings").click()
@@ -112,6 +109,11 @@ def enter_cid_dob_cdlclass(driver, cid, dob, cdlclass):
     cdlClassSelect.select_by_visible_text(cdlclass)    
 
 def check_eligibility(driver):
+
+    # TODO: Please Verify if the following error occurs under class="error-message-label" (under parent div id="MainContent_vsClientInfoDlgErrMsg"):
+    # There was a problem calling CheckElibility with client Id 910840069, test type A and retrieveImage False.
+    # Retry N times or go back to Scheduling link
+
     try:        
         WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.ID, "chkClientInfoDlg")))        
         driver.find_element(By.ID, value="chkClientInfoDlg").click() 
@@ -119,13 +121,15 @@ def check_eligibility(driver):
         print("Timeout: Element 'chkClientInfoDlg' not interactable after waiting.")
     except Exception as e:
         print(f"chkClientInfoDlg Exception occurred: {e}")
-    
+        
     driver.find_element(By.ID, value="btnClientInfoDlgCheckEligibility").click()
+    # here you can have the error: There was a problem calling CheckElibility with client Id
+
     okMsg  = driver.find_element(By.ID, value="MainContent_vsClientInfoDlgOkMsg")
     errMsg = driver.find_element(By.ID, value="MainContent_vsClientInfoDlgErrMsg")
     try:
         print ("Checking for All CIDs are eligible")
-        WebDriverWait(driver, 60).until(
+        WebDriverWait(driver, 90).until(
             EC.text_to_be_present_in_element((By.ID, "MainContent_vsClientInfoDlgOkMsg"), "All CIDs are eligible")
         )
         print ("Found text - All CIDs are eligible. Proceeding")   
@@ -136,7 +140,7 @@ def check_eligibility(driver):
         print(f"MainContent_vsClientInfoDlgOkMsg Exception occurred: {e}")
 
     try:        
-        WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.ID, "chkClientInfoDlg")))        
+        WebDriverWait(driver, 90).until(EC.element_to_be_clickable((By.ID, "chkClientInfoDlg")))        
         driver.find_element(By.ID, value="chkClientInfoDlg").click()
     except TimeoutException:
         print("Timeout: Element 'chkClientInfoDlg' not interactable after waiting.")
@@ -145,7 +149,7 @@ def check_eligibility(driver):
 
 def wait_for_calendar_page(driver):
     try:
-        WebDriverWait(driver, 60).until(
+        WebDriverWait(driver, 90).until(
             EC.text_to_be_present_in_element((By.ID, "MainContent_lblDetailsNote"), "Your account may hold up to")
         )
         print("Found text - Your account may hold up to ... Proceeding")
@@ -153,6 +157,10 @@ def wait_for_calendar_page(driver):
         print("Timeout: Element 'MainContent_lblDetailsNote' cannot find such text.")
     except Exception as e:
         print(f"MainContent_lblDetailsNote Exception occurred: {e}")   
+
+def select_test_site_after_verification(driver, site_name):    
+    sites_select = Select(driver.find_element(by=By.ID, value="MainContent_ddlDetailTestSiteId"))
+    sites_select.select_by_visible_text(site_name)
 
 def process_time_slots(driver):
     """
@@ -176,7 +184,7 @@ def process_time_slots(driver):
 
     if not is_error_message and is_error_message_element:
         try:
-            slots_table = WebDriverWait(driver, 10).until(
+            slots_table = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.ID, "MainContent_dlDetailsSlots"))
             )
             try:
@@ -213,7 +221,7 @@ def month_move(driver, direction, month_year=None):
             # Loop up to 3 times to match the target month_year
             for attempt in range(3):
                 # Locate the navigator_transparent_title element
-                navigator_transparent_title = WebDriverWait(driver, 10).until(
+                navigator_transparent_title = WebDriverWait(driver, 7).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, "div.navigator_transparent_title"))
                 )
                 # Retrieve the text under the navigator_transparent_title element
@@ -236,7 +244,7 @@ def month_move(driver, direction, month_year=None):
             print(f"Failed to reach target month and year '{month_year}' after 3 attempts.")
         else:
             # Original functionality: Click the specified direction once
-            navigator_transparent_title = WebDriverWait(driver, 10).until(
+            navigator_transparent_title = WebDriverWait(driver, 7).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div.navigator_transparent_title"))
             )
             calendar_month_year = navigator_transparent_title.text
@@ -325,16 +333,22 @@ def process_calendar(driver):
         7. Repeat steps 1-6 for all locations indefinitely.
     """
 
-    current_month_year = datetime.now().strftime("%B %Y")
-    process_time_slots(driver)
+    while True:
+        current_month_year = datetime.now().strftime("%B %Y")
+        
+        select_test_site_after_verification(driver, "Nassau CC CDL")
+        process_time_slots(driver)
+        process_div_busy_elements(driver)
+        month_move(driver, "div.navigator_transparent_titleright")
+        process_div_busy_elements(driver)
+        month_move(driver, "div.navigator_transparent_titleleft", current_month_year)
 
-    process_div_busy_elements(driver)
-    month_move(driver, "div.navigator_transparent_titleright")
-    
-    process_div_busy_elements(driver)
-    month_move(driver, "div.navigator_transparent_titleleft", current_month_year)
-
-    # TODO move to other locations and repeat process
+        select_test_site_after_verification(driver, "Uniondale CDL")
+        process_time_slots(driver)
+        process_div_busy_elements(driver)
+        month_move(driver, "div.navigator_transparent_titleright")
+        process_div_busy_elements(driver)
+        month_move(driver, "div.navigator_transparent_titleleft", current_month_year)    
 
 def main():
     driver = setup_driver()
@@ -342,7 +356,7 @@ def main():
         login(driver, "https://www.nyakts.com/Login.aspx?mid=2269", "7583ds", "Ditmas_201!")
         navigate_to_booking_page(driver, "https://www.nyakts.com/NyRstApps/ThirdPartyBooking.aspx?mid=2269")
         solve_recaptcha(driver)
-        select_test_site(driver, "Fresh Kills CDL")
+        select_test_site(driver, "Nassau CC CDL") # "Fresh Kills CDL"
         enter_cid_dob_cdlclass(driver, "910840069", "06/29/1988", "CDL A (Class A CDL)")
         check_eligibility(driver)
         wait_for_calendar_page(driver)
@@ -355,141 +369,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-    # while not div_busy_elements:
-    #     div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
-    #     if not div_busy_elements:
-    #         print("No div_busy elements found. retrying...")           
-    #         time.sleep(random.randint(3, 15))
-
-    # print(f"Found {len(div_busy_elements)} div_busy elements.")
-    # div_with_numbers = []
-
-    # for index, div in enumerate(div_busy_elements):
-    #     try:
-    #         inner_div = div.find_element(By.XPATH, ".//div[contains(@class, 'navigator_transparent_cell_text')]")
-    #         number = int(inner_div.text.strip())
-    #         div_with_numbers.append((index, number))
-    #     except Exception as e:
-    #         print(f"Error while processing element: {e}")
-    #         continue
-
-    # div_with_numbers.sort(key=lambda x: x[1])
-
-    # for index, number in div_with_numbers:
-    #     try:
-    #         div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")
-    #         try:
-    #             div = div_busy_elements[index]
-    #         except IndexError:
-    #             print(f"IndexError: div_busy_elements list has changed. Skipping index {index}.")
-    #             continue
-
-    #         print(f"Number found: {number}")
-    #         div.click()
-    #         print(f"Clicked on {number}")
-    #         time.sleep(random.randint(1, 3))
-    #     except Exception as e:
-    #         print(f"Error while processing element: {e}")
-    #         continue              
-
-
-# MainContent_dlDetailsSlots
-# MainContent_dlDetailsSlots_lblDetailsTimeSlot_0 - this is time slot but I suspect it has variable suffix
-
-# <span class="recaptcha-checkbox goog-inline-block recaptcha-checkbox-unchecked rc-anchor-checkbox
-#            aria-checked="false"
-# <span class="recaptcha-checkbox goog-inline-block recaptcha-checkbox-unchecked rc-anchor-checkbox recaptcha-checkbox-checked"
-#            aria-checked="true"
-#            aria-disabled="false"
-#            style="overflow: visible;"
-
-# HTML structure for reCAPTCHA checkbox
-# <div class="rc-inline-block">
-#  <div class="rc-anchor-center-container">
-#   <div class="rc-anchor-center-item rc-anchor-checkbox-holder">
-#    <span class="recaptcha-checkbox goog-inline-block recaptcha-checkbox-unchecked rc-anchor-checkbox"
-#            role="checkbox"
-#            aria-checked="false"
-#            id="recaptcha-anchor"
-#            tabindex="0"
-#            dir="ltr"
-#            aria-labelledby="recaptcha-anchor-label">
-#               <div class="recaptcha-checkbox-border" role="presentation"></div>
-#               <div class="recaptcha-checkbox-borderAnimation" role="presentation"></div>
-#               <div class="recaptcha-checkbox-spinner" role="presentation">
-#                  <div class="recaptcha-checkbox-spinner-overlay"></div>
-#               </div>
-#               <div class="recaptcha-checkbox-checkmark" role="presentation"></div>
-#    </span>
-#   </div>
-#  </div>
-# </div>
-
-# <div class="rc-inline-block">
-#  <div class="rc-anchor-center-container">
-#   <div class="rc-anchor-center-item rc-anchor-checkbox-holder">
-#    <span class="recaptcha-checkbox goog-inline-block recaptcha-checkbox-unchecked rc-anchor-checkbox recaptcha-checkbox-checked"
-#           role="checkbox"
-#           aria-checked="true"
-#           id="recaptcha-anchor"
-#           dir="ltr"
-#           aria-labelledby="recaptcha-anchor-label"
-#           aria-disabled="false"
-#           tabindex="0"
-#           style="overflow: visible;">
-#             <div class="recaptcha-checkbox-border" role="presentation" style="display: none;"></div>
-#             <div class="recaptcha-checkbox-borderAnimation" role="presentation" style=""></div>
-#             <div class="recaptcha-checkbox-spinner" role="presentation" style="display: none; animation-play-state: running; opacity: 1;">
-#               <div class="recaptcha-checkbox-spinner-overlay" style="animation-play-state: running;"></div>
-#             </div>
-#             <div class="recaptcha-checkbox-checkmark" role="presentation" style=""></div>
-#    </span>
-#   </div>
-#  </div>
-# </div>
-
-# ----------------- arrow back
-# <div unselectable="on" class="navigator_transparent_titleleft" style="position: absolute; left: 0px; top: 0px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><span>&lt;</span></div>
-
-# ----------------- arrow front
-# <div unselectable="on" class="navigator_transparent_titleright" style="position: absolute; left: 120px; top: 0px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><span>&gt;</span></div>
-
-# ----------------- Today's date
-# <div class="navigator_transparent_day navigator_transparent_cell navigator_transparent_today navigator_transparent_dayother navigator_transparent_select" unselectable="on" style="position: absolute; left: 60px; top: 100px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_todaybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">20</div></div>
-
-# ----------------- First available non-green date
-# <div class="navigator_transparent_day      navigator_transparent_cell"                            unselectable="on" style="position: absolute; left: 20px; top: 120px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">25</div></div>
-
-# ----------------- First available green date
-# <div class="navigator_transparent_day      navigator_transparent_cell navigator_transparent_busy" unselectable="on" style="position: absolute; left: 0px;  top: 140px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">31</div></div>
-
-# ----------------- First available green date with time slots (dayother means other month if we are in prev month)
-# <div class="navigator_transparent_dayother navigator_transparent_cell navigator_transparent_busy" unselectable="on" style="position: absolute; left: 80px; top: 140px; width: 20px; height: 20px; line-height: 20px; cursor: pointer;"><div class="navigator_transparent_daybox navigator_transparent_cell_box" style="position: absolute; inset: 0px;"></div><div class="navigator_transparent_cell_text" style="position: absolute; inset: 0px;">4</div></div>
-
-# ----------------- Date of time slots
-# <legend class="fwd">Available Appointments: <span id="MainContent_lblDeailsBookDate">04/04/2025</span></legend>
-
-# ----------------- Table of time slots
-# <table id="MainContent_dlDetailsSlots" class="datalist-item" cellspacing="0" style="border-collapse:collapse;">
-# 				<tbody><tr>
-# 					<td>
-#                                                 <div class="schedule-time-slot">
-#                                                     <span id="MainContent_dlDetailsSlots_lblDetailsTimeSlot_0" class="js-schedule-time-slot" data-slotid="3046034">12:45 PM </span>
-#                                                 </div>
-#                                             </td><td>
-#                                                 <div class="schedule-time-slot">
-#                                                     <span id="MainContent_dlDetailsSlots_lblDetailsTimeSlot_1" class="js-schedule-time-slot" data-slotid="3046033">02:00 PM (2.00)</span>
-#                                                 </div>
-#                                             </td><td></td><td></td><td></td><td></td><td></td><td></td>
-# 				</tr>
-# 			</tbody></table>
-
-# ----------------- Showing message that No appointments are available (parent: <fieldset class="size99pct">)
-# <div class="error-message ">
-#  <span class="error-message-label">No appointments for test type CDL A are available for the selected date.</span>
-# </div>
 
 # Change between RT sites
 # <select name="ctl00$MainContent$ddlDetailTestSiteId" onchange="javascript:setTimeout('__doPostBack(\'ctl00$MainContent$ddlDetailTestSiteId\',\'\')', 0)" id="MainContent_ddlDetailTestSiteId" class="width99pct">
@@ -547,3 +426,36 @@ if __name__ == "__main__":
 # 				<option value="2904">West Seneca CDL</option>
 # 				<option value="2944">Westmoreland Thruway Tandem Lot CDL</option>
 # 			</select>
+
+# def solve_recaptcha_orig(driver):
+
+#     ## use Buster Chrome Extension solver-button: 
+#     # https://chromewebstore.google.com/detail/Buster:%20Captcha%20Solver%20for%20Humans/mpbjkejclgfgadiemmefgebjfooflfhl?hl=en
+#     ## div.rc-imageselect-desc-wrapper if recaptcha checkbox appears
+#     ## id="recaptcha-anchor", aria-checked="true"
+
+#     try:
+#         print("Finding reCAPTCHA frame")
+#         WebDriverWait(driver, 100).until(
+#             EC.presence_of_element_located((By.XPATH, ".//iframe[@title='reCAPTCHA']"))
+#         )
+#         driver.switch_to.frame(driver.find_element(By.XPATH, value=".//iframe[@title='reCAPTCHA']"))
+#         print("Switched to reCAPTCHA frame")
+
+#         print("recaptchaCheckBox - checking state if clicked")
+#         recaptcha_checkbox = driver.find_element(by=By.ID, value="recaptcha-anchor")
+#         recaptcha_checkbox.click()
+            
+#         WebDriverWait(driver, 90).until(
+#             EC.text_to_be_present_in_element_attribute(
+#                 (By.ID, "recaptcha-anchor"), "aria-checked", "true"
+#             )
+#         )
+#         print("recaptchaCheckBox - checked")
+#     except Exception as e:
+#         print(f"Recaptcha is not checked. Exception occurred: {e}")
+#         traceback.print_exc()
+#         exit(1)
+#     finally:
+#         driver.switch_to.default_content()
+
