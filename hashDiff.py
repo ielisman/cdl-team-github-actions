@@ -1,5 +1,3 @@
-from deepdiff import DeepDiff
-
 class HashComparator:
     def __init__(self):
         pass
@@ -10,7 +8,7 @@ class HashComparator:
         if appointment_date not in dictionary[location]:
             dictionary[location][appointment_date] = []
 
-    def added_new_items(self, hash1, hash2):
+    def diff(self, hash1, hash2, printAnalysis=False):
     
         same_times = {}
         added_locations = {}
@@ -25,14 +23,16 @@ class HashComparator:
                 if isinstance(hash2[location], dict):
                     for appointment_date in hash2[location].keys():                        
                         for times_slot in hash2[location][appointment_date]:
-                            print(f"New location: {location} => {appointment_date} => {times_slot}")
+                            if printAnalysis:
+                                print(f"New location: {location} => {appointment_date} => {times_slot}")
                             self.initialize_nested_dict(added_locations, location, appointment_date)
                             added_locations[location][appointment_date].append(times_slot)
             elif hash1[location] != hash2[location]:                
                 for appointment_date in hash2[location].keys():
                     if appointment_date not in hash1[location]:                       
                         for times_slot in hash2[location][appointment_date]:
-                            print(f"New date    : {location} => {appointment_date} => {times_slot}")
+                            if printAnalysis:
+                                print(f"New date    : {location} => {appointment_date} => {times_slot}")
                             self.initialize_nested_dict(added_dates, location, appointment_date)
                             added_dates[location][appointment_date].append(times_slot)
                     elif hash1[location][appointment_date] != hash2[location][appointment_date]:
@@ -40,19 +40,38 @@ class HashComparator:
                         if isinstance(hash1[location][appointment_date], list) and isinstance(hash2[location][appointment_date], list):
                             for times_slot in hash2[location][appointment_date]:
                                 if times_slot not in hash1[location][appointment_date]:
-                                    print(f"New time    : {location} => {appointment_date} => {times_slot}")
+                                    if printAnalysis:
+                                        print(f"New time    : {location} => {appointment_date} => {times_slot}")
                                     self.initialize_nested_dict(added_times, location, appointment_date)
                                     added_times[location][appointment_date].append(times_slot)
                     elif hash1[location][appointment_date] == hash2[location][appointment_date]:
-                        print(f"Same {location} {appointment_date} for hash1 and hash2")
+                        if printAnalysis:
+                            print(f"Same {location} {appointment_date} for hash1 and hash2: {hash2[location][appointment_date]}")
                         self.initialize_nested_dict(same_times, location, appointment_date)
                         same_times[location][appointment_date] = hash2[location][appointment_date]
 
         for location in hash1.keys():
             if location not in hash2:
-                print(f"removed location {location}")
-        
-                
+                if printAnalysis:
+                    print(f"removed location {location}: {hash1[location]}")
+                removed_locations[location] = hash1[location]
+            else:
+                if isinstance(hash1[location], dict):
+                    for appointment_date in hash1[location].keys():
+                        if appointment_date not in hash2[location]:
+                            if printAnalysis:
+                                print(f"removed date    : {location} => {appointment_date} => {hash1[location][appointment_date]}")
+                            self.initialize_nested_dict(removed_dates, location, appointment_date)
+                            removed_dates[location][appointment_date] = hash1[location][appointment_date]
+                        else:
+                             if isinstance(hash1[location][appointment_date], list) and isinstance(hash2[location][appointment_date], list):
+                                for times_slot in hash1[location][appointment_date]:
+                                    if times_slot not in hash2[location][appointment_date]:
+                                        if printAnalysis:
+                                            print(f"Removed time    : {location} => {appointment_date} => {times_slot}")
+                                        self.initialize_nested_dict(removed_times, location, appointment_date)
+                                        removed_times[location][appointment_date].append(times_slot)
+
         return  { 'same_times': same_times, 
                   'added_locations': added_locations, 'added_dates': added_dates, 'added_times': added_times, 
                   'removed_locations': removed_locations, 'removed_dates': removed_dates, 'removed_times': removed_times
@@ -88,14 +107,15 @@ hash1 = {
         '03/31/2005': ['9:30'],
         '04/10/2005': ['8:30']
     },
-    'locationX': {        
+    'locationX': {
+        '03/31/2005': ['9:30']     
     }
 }
 
 hash2 = {
     'location1': {
         '03/25/2005': ['8:30', '9:30'],
-        '03/29/2005': ['8:30', '10:45', '12:45', '13:45']
+        '03/29/2005': ['10:45', '12:45', '13:45'] # '03/29/2005': ['8:30', '10:45', '12:45', '13:45']
     },
     'location2': {
         '03/29/2005': ['12:30'],
@@ -107,13 +127,15 @@ hash2 = {
     },    
 }
 
-comparator = HashComparator()
-added_items = comparator.added_new_items(hash1, hash2)
-print("\n")
-print(HashComparator.to_string(added_items))
-hash1 = hash2
+# comparator = HashComparator()
+# added_items = comparator.diff(hash1, hash2, printAnalysis=False)
+# print("\n")
+# print(HashComparator.to_string(added_items))
+# hash1 = hash2
 # print("\nUpdated hash1:\n", HashComparator.to_string(hash1))
 
+# from deepdiff import DeepDiff
+#
 # def compare_hashes(self, hash1, hash2, update_hash1=False):
 #     """
 #     Compare two hashes and optionally update the first hash with changes.
