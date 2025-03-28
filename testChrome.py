@@ -3,6 +3,7 @@ import time
 import traceback
 
 from datetime                           import datetime
+from deepdiff                           import DeepDiff
 from selenium                           import webdriver
 from selenium.common.exceptions         import WebDriverException, NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.service  import Service
@@ -18,6 +19,9 @@ from selenium_recaptcha_solver          import RecaptchaSolver
 # 2. https://ffmpeg.org/download.html (download and extract to a folder, add the folder to PATH. ffmpeg -version)
 # 3. pip install selenium webdriver-manager selenium-recaptcha-solver ffmpeg (pip show selenium ffmpeg ...)
 #    optional: python -m pip install --upgrade pip
+
+global_time_slots_per_location_date = {}
+local_time_slots_per_location_date = {}
 
 def setup_driver():
     chrome_options = webdriver.ChromeOptions()
@@ -162,58 +166,6 @@ def select_test_site_after_verification(driver, site_name):
     sites_select = Select(driver.find_element(by=By.ID, value="MainContent_ddlDetailTestSiteId"))
     sites_select.select_by_visible_text(site_name)
 
-def process_time_slots(driver, location, appointments_date=None, viaGreenDate=False):
-    """
-    Function to process time slots under the element with id 'MainContent_dlDetailsSlots'.
-    """
-    time_slots_per_date = {}
-
-    if appointments_date is None:
-        # print("Appointments date text not provided. Using current date.")
-        appointments_date = datetime.now().strftime("%m/%d/%Y")
-
-    is_error_message = False
-    is_error_message_element = True
-    try:
-        error_message_label = WebDriverWait(driver, 2.3).until(
-            EC.presence_of_element_located((By.XPATH, "//*[@id='MainContent_pnlDetails']/div[4]/table/tbody/tr/td[2]/fieldset/div/span"))
-        )
-        # print(f"process_time_slots: Appointment text: {error_message_label.text}")
-        if "No appointments" in error_message_label.text:
-            print(f"No appointments found for {appointments_date}.")
-            is_error_message = True
-            if viaGreenDate:
-                print(f"Found Green Date for {location} {appointments_date} with no time slots")
-                time_slots_per_date[appointments_date] = []
-                return time_slots_per_date
-    except TimeoutException:
-        print("Timeout: Element 'error-message-label' not found.")
-        is_error_message_element = False # it should exists with empty text when there are time slots
-    except Exception as e:
-        print(f"process_time_slots: Exception occurred for 'error-message-label'")    
-
-    if not is_error_message and is_error_message_element:
-        try:
-            slots_table = WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.ID, "MainContent_dlDetailsSlots"))
-            )                
-            # Count the number of elements with the class "schedule-time-slot" under the table
-            time_slots_elements = []
-            time_slots_list = []
-            time_slots_elements = slots_table.find_elements(By.CLASS_NAME, "js-schedule-time-slot")            
-            for index, slot in enumerate(time_slots_elements):
-                # print(f"{appointments_date} Time slot {index}: {slot.text}")
-                time_slots_list.append(slot.text)            
-            time_slots_per_date[appointments_date] = time_slots_list
-            print(f"Time Slots for {location} {appointments_date} : {time_slots_list}")
-
-        except TimeoutException:
-            print("Timeout: Element 'MainContent_dlDetailsSlots' not found.")
-        except Exception as e:
-            print(f"process_time_slots: Exception occurred while counting time slots")
-
-        return time_slots_per_date  
-        
 def month_move(driver, direction, location=None, month_year=None):
     """
     Function to find the span under "div.navigator_transparent_titleright" or "div.navigator_transparent_titleleft",
@@ -261,6 +213,59 @@ def month_move(driver, direction, location=None, month_year=None):
     except Exception as e:
         print(f"Exception occurred while clicking inside {direction} {location}")
 
+def process_time_slots(driver, location, appointments_date=None, viaGreenDate=False):
+    """
+    Function to process time slots under the element with id 'MainContent_dlDetailsSlots'.
+    """
+    global local_time_slots_per_location_date
+
+    if appointments_date is None:
+        # print("Appointments date text not provided. Using current date.")
+        appointments_date = datetime.now().strftime("%m/%d/%Y")
+
+    is_error_message = False
+    is_error_message_element = True
+    try:
+        error_message_label = WebDriverWait(driver, 2.3).until(
+            EC.presence_of_element_located((By.XPATH, "//*[@id='MainContent_pnlDetails']/div[4]/table/tbody/tr/td[2]/fieldset/div/span"))
+        )
+        # print(f"process_time_slots: Appointment text: {error_message_label.text}")
+        if "No appointments" in error_message_label.text:
+            print(f"No appointments found for {appointments_date}.")
+            is_error_message = True
+            if viaGreenDate:
+                print(f"Found Green Date for {location} {appointments_date} with no time slots")
+                if location not in local_time_slots_per_location_date:
+                    local_time_slots_per_location_date[location] = {}
+                local_time_slots_per_location_date[location][appointments_date] = []                
+    except TimeoutException:
+        print("Timeout: Element 'error-message-label' not found.")
+        is_error_message_element = False # it should exists with empty text when there are time slots
+    except Exception as e:
+        print(f"process_time_slots: Exception occurred for 'error-message-label'")    
+
+    if not is_error_message and is_error_message_element:
+        try:
+            slots_table = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.ID, "MainContent_dlDetailsSlots"))
+            )                
+            # Count the number of elements with the class "schedule-time-slot" under the table
+            time_slots_elements = []
+            time_slots_list = []
+            time_slots_elements = slots_table.find_elements(By.CLASS_NAME, "js-schedule-time-slot")            
+            for index, slot in enumerate(time_slots_elements):
+                # print(f"{appointments_date} Time slot {index}: {slot.text}")
+                time_slots_list.append(slot.text)                        
+            # Hash time_slots_list against location and date
+            if location not in local_time_slots_per_location_date:
+                local_time_slots_per_location_date[location] = {}
+            local_time_slots_per_location_date[location][appointments_date] = time_slots_list
+            print(f"Time Slots for {location} {appointments_date} : {time_slots_list}")
+        except TimeoutException:
+            print("Timeout: Element 'MainContent_dlDetailsSlots' not found.")
+        except Exception as e:
+            print(f"process_time_slots: Exception occurred while counting time slots")        
+        
 def process_div_busy_elements(driver, location):
     print(f"Checking for green dates for location: {location}...")
 
@@ -320,6 +325,17 @@ def process_div_busy_elements(driver, location):
     except TimeoutException:
         print("Timeout: Element 'div.navigator_transparent_busy' (green dates) not found.")
         
+def send_notification(location, added_items, changed_items):
+    """
+    Send a notification when new or changed time slots are detected.
+    """
+    print(f"Notification: Changes detected for {location}.")
+    if added_items:
+        print(f"Added time slots: {added_items}")
+    if changed_items:
+        print(f"Changed time slots: {changed_items}")
+    # Add your notification logic here (e.g., email, SMS, etc.)
+
 def process_one_verification(driver):
     """
         1. Get current Month and Year.
@@ -330,22 +346,45 @@ def process_one_verification(driver):
         6. Repeat steps 2-5 until all available time slots are processed for that location.
         7. Repeat steps 1-6 for all locations indefinitely.
     """
-    current_month_year = datetime.now().strftime("%B %Y")
-    location = "Nassau CC CDL"
-    select_test_site_after_verification(driver, location)        
-    process_time_slots(driver, location)        
-    process_div_busy_elements(driver, location)
-    month_move(driver, "div.navigator_transparent_titleright", location)
-    process_div_busy_elements(driver, location)
-    month_move(driver, "div.navigator_transparent_titleleft", location, current_month_year)
 
-    location = "Uniondale CDL"
-    select_test_site_after_verification(driver, location) # "Fresh Kills CDL" "Uniondale CDL" "Nassau CC CDL"
-    process_time_slots(driver, location)        
-    process_div_busy_elements(driver, location)
-    month_move(driver, "div.navigator_transparent_titleright", location)
-    process_div_busy_elements(driver, location)
-    month_move(driver, "div.navigator_transparent_titleleft", location, current_month_year) 
+    global global_time_slots_per_location_date
+    global local_time_slots_per_location_date
+
+    current_month_year = datetime.now().strftime("%B %Y")
+    locations = ["Nassau CC CDL", "Uniondale CDL"]  # Add more locations as needed "Fresh Kills CDL" "Uniondale CDL" "Nassau CC CDL"
+    local_time_slots_per_location_date = {}
+
+    for location in locations:
+        print(f"Processing location: {location}")
+        select_test_site_after_verification(driver, location)    
+        process_time_slots(driver, location)
+        process_div_busy_elements(driver, location)
+        month_move(driver, "div.navigator_transparent_titleright", location)
+        process_div_busy_elements(driver, location)
+        month_move(driver, "div.navigator_transparent_titleleft", location, current_month_year)
+
+        # Compare with global_time_slots_per_location_date
+        if location not in global_time_slots_per_location_date:
+            global_time_slots_per_location_date[location] = {}
+        global_time_slots = global_time_slots_per_location_date[location]
+
+        diff = DeepDiff(global_time_slots, local_time_slots_per_location_date.get(location, {}), ignore_order=True)
+
+        # Handle removed values
+        if "dictionary_item_removed" in diff:
+            removed_items = diff["dictionary_item_removed"]
+            print(f"Removed time slots for location {location}: {removed_items}")
+            for key in removed_items:
+                date = key.split("[")[1].strip("']")
+                global_time_slots.pop(date, None)
+
+        # Handle added or changed values
+        if "dictionary_item_added" in diff or "values_changed" in diff:
+            added_or_changed_items = diff.get("dictionary_item_added", {})
+            changed_items = diff.get("values_changed", {})
+            print(f"Added or changed time slots for location {location}: {added_or_changed_items} {changed_items}")
+            global_time_slots.update(time_slots_per_location_date.get(location, {}))
+            send_notification(location, added_or_changed_items, changed_items)
 
 def process_calendar(driver):
     i = 0
