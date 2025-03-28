@@ -162,55 +162,59 @@ def select_test_site_after_verification(driver, site_name):
     sites_select = Select(driver.find_element(by=By.ID, value="MainContent_ddlDetailTestSiteId"))
     sites_select.select_by_visible_text(site_name)
 
-def process_time_slots(driver):
+def process_time_slots(driver, location, appointments_date=None, viaGreenDate=False):
     """
     Function to process time slots under the element with id 'MainContent_dlDetailsSlots'.
-    """  
-    appointments_date_text = ''
+    """
+    time_slots_per_date = {}
+
+    if appointments_date is None:
+        # print("Appointments date text not provided. Using current date.")
+        appointments_date = datetime.now().strftime("%m/%d/%Y")
+
     is_error_message = False
     is_error_message_element = True
     try:
-        error_message_label = WebDriverWait(driver, 1).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "error-message-label"))
+        error_message_label = WebDriverWait(driver, 2.3).until(
+            EC.presence_of_element_located((By.XPATH, "//*[@id='MainContent_pnlDetails']/div[4]/table/tbody/tr/td[2]/fieldset/div/span"))
         )
+        # print(f"process_time_slots: Appointment text: {error_message_label.text}")
         if "No appointments" in error_message_label.text:
-            print("No appointments found for this date.")
-            is_error_message = True      
+            print(f"No appointments found for {appointments_date}.")
+            is_error_message = True
+            if viaGreenDate:
+                print(f"Found Green Date for {location} {appointments_date} with no time slots")
+                time_slots_per_date[appointments_date] = []
+                return time_slots_per_date
     except TimeoutException:
         print("Timeout: Element 'error-message-label' not found.")
         is_error_message_element = False # it should exists with empty text when there are time slots
     except Exception as e:
-        print(f"Exception occurred for 'error-message-label': {e}")    
+        print(f"process_time_slots: Exception occurred for 'error-message-label'")    
 
     if not is_error_message and is_error_message_element:
         try:
             slots_table = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.ID, "MainContent_dlDetailsSlots"))
-            )
-            try:
-                appointments_date = WebDriverWait(driver, 30).until(
-                    EC.presence_of_element_located((By.ID, "MainContent_lblDeailsBookDate"))
-                )
-                appointments_date_text = appointments_date.text
-                print(f"Appointments date found: {appointments_date_text}") # TODO stale date             
-            except TimeoutException:
-                print("Timeout: Element MainContent_lblDeailsBookDate not found.")       
-            except Exception as e:
-                print(f"Exception occurred for MainContent_lblDeailsBookDate: {e}") 
-
+            )                
             # Count the number of elements with the class "schedule-time-slot" under the table
-            time_slots = slots_table.find_elements(By.CLASS_NAME, "js-schedule-time-slot")
-            for index, slot in enumerate(time_slots):
-                print(f"{appointments_date_text} Time slot {index}: {slot.text}")
-                    
+            time_slots_elements = []
+            time_slots_list = []
+            time_slots_elements = slots_table.find_elements(By.CLASS_NAME, "js-schedule-time-slot")            
+            for index, slot in enumerate(time_slots_elements):
+                # print(f"{appointments_date} Time slot {index}: {slot.text}")
+                time_slots_list.append(slot.text)            
+            time_slots_per_date[appointments_date] = time_slots_list
+            print(f"Time Slots for {location} {appointments_date} : {time_slots_list}")
+
         except TimeoutException:
             print("Timeout: Element 'MainContent_dlDetailsSlots' not found.")
         except Exception as e:
-            print(f"Exception occurred while counting time slots: {e}")
+            print(f"process_time_slots: Exception occurred while counting time slots")
 
-        return appointments_date_text
+        return time_slots_per_date  
         
-def month_move(driver, direction, month_year=None):
+def month_move(driver, direction, location=None, month_year=None):
     """
     Function to find the span under "div.navigator_transparent_titleright" or "div.navigator_transparent_titleleft",
     click on it, and retrieve the text under "div.navigator_transparent_title".
@@ -226,11 +230,11 @@ def month_move(driver, direction, month_year=None):
                 )
                 # Retrieve the text under the navigator_transparent_title element
                 calendar_month_year = navigator_transparent_title.text
-                print(f"Current calendar month and year: {calendar_month_year}")
+                print(f"Current calendar month and year: {calendar_month_year}. Location is {location}")
 
                 # Check if the current calendar month and year matches the target month_year
                 if calendar_month_year == month_year:
-                    print(f"Target month and year '{month_year}' reached.")
+                    print(f"Target month and year '{month_year}' for location {location} was reached.")
                     return
 
                 # Locate the direction div (e.g., titleright or titleleft)
@@ -238,29 +242,27 @@ def month_move(driver, direction, month_year=None):
                 # Find the span inside the direction div and click on it
                 month_direction_span = month_direction_div.find_element(By.TAG_NAME, "span")
                 month_direction_span.click()
-                print(f"Clicked inside {direction}. Attempt {attempt + 1}.")
+                print(f"Clicked inside {direction} ({location}). Attempt {attempt + 1}.")
 
             # If the loop completes and the target month_year is not reached
-            print(f"Failed to reach target month and year '{month_year}' after 3 attempts.")
+            print(f"Failed to reach target month and year '{month_year}' for {location} after 3 attempts.")
         else:
             # Original functionality: Click the specified direction once
             navigator_transparent_title = WebDriverWait(driver, 7).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div.navigator_transparent_title"))
             )
             calendar_month_year = navigator_transparent_title.text
-            print(f"Current calendar month and year: {calendar_month_year}")
-
             month_direction_div = driver.find_element(By.CSS_SELECTOR, direction)
             month_direction_span = month_direction_div.find_element(By.TAG_NAME, "span")
             month_direction_span.click()
-            print(f"Clicked inside {direction}.")
+            print(f"Clicked inside {direction} for location {location}. Calendar is {calendar_month_year}")
     except TimeoutException:
-        print(f"Timeout: {direction} not found.")
+        print(f"Timeout: {direction} for {location} was not found.")
     except Exception as e:
-        print(f"Exception occurred while clicking inside {direction}: {e}")
+        print(f"Exception occurred while clicking inside {direction} {location}")
 
-def process_div_busy_elements(driver):
-    print("Processing div_busy elements...")
+def process_div_busy_elements(driver, location):
+    print(f"Checking for green dates for location: {location}...")
 
     try: 
         WebDriverWait(driver, 10).until(
@@ -277,7 +279,7 @@ def process_div_busy_elements(driver):
                     number = int(inner_div.text.strip())
                     div_with_numbers.append((index, number))
                 except Exception as e:
-                    print(f"Error while processing element: {e}")
+                    print(f"process_div_busy_elements Error while processing sub element navigator_transparent_cell_text. Will continue")
                     continue
 
             div_with_numbers.sort(key=lambda x: x[1])
@@ -290,39 +292,35 @@ def process_div_busy_elements(driver):
                         print(f"IndexError: div_busy_elements list has changed. Skipping index {index}.")
                         continue
 
-                    print(f"Number found: {number}")
-                    div.click()
-                    time.sleep(random.randint(1, 3))
+                    print(f"Green date is found: {number}")
+                    div.click()                    
+                    # print(f"process_div_busy_elements: Checking the staleness of div for {number}.")
+                    try: 
+                        WebDriverWait(driver, 1).until(EC.staleness_of(div))
+                    except Exception as se:
+                        print(f"Green Dates: Staleness check failed for div")
+                        
+                    sleep_time = random.uniform(0.75, 1.135)
+                    print(f"Green Date: Sleeping for {sleep_time} seconds before invoking process_time_slots for {location} {number}.")
+                    time.sleep(sleep_time)                    
 
-                    # TODO no more stale data after short sleep above. meaning that WebDriverWait get stale data immediately
-                    try:
-                        appointments_date = WebDriverWait(driver, 30).until(
-                            EC.presence_of_element_located((By.ID, "MainContent_lblDeailsBookDate"))
-                        )
-                        appointments_date = driver.find_element(By.ID, "MainContent_lblDeailsBookDate")                        
-                        navigator_transparent_title = driver.find_element(by=By.CSS_SELECTOR, value="div.navigator_transparent_title")
-                        calendar_month_year = navigator_transparent_title.text                        
-                        clicked_date_object = datetime.strptime(f"{number} {calendar_month_year}", "%d %B %Y")
-                        clicked_date = clicked_date_object.strftime("%m/%d/%Y")
-                        appointments_date_text = appointments_date.text
-                        print(f"Appointments date found: {appointments_date_text} and clicked_date is {clicked_date} (number is {number})") # TODO still stale
-                    except TimeoutException:
-                        print("Timeout: Element MainContent_lblDeailsBookDate not found.")       
-                    except Exception as e:
-                        print(f"Exception occurred for MainContent_lblDeailsBookDate: {e}")
+                    # Webpage has bug where Available Appointments is incorrect in some cases. Do not rely on it
+                    navigator_transparent_title = driver.find_element(by=By.CSS_SELECTOR, value="div.navigator_transparent_title")                    
+                    calendar_month_year = navigator_transparent_title.text                    
+                    clicked_date_object = datetime.strptime(f"{number} {calendar_month_year}", "%d %B %Y")                    
+                    clicked_date = clicked_date_object.strftime("%m/%d/%Y")                    
+                    process_time_slots(driver, location, clicked_date, True) # already processed once                    
 
-                    process_time_slots(driver) # already processed once                    
-                    
                 except Exception as e:
-                    print(f"Error while processing element: {e}")
+                    print(f"green dates. Error while processing element: {e}")
                     continue              
         else:
-            print("No div_busy elements found")
+            print("No green dates were found")
 
     except TimeoutException:
-        print("Timeout: Element 'div.navigator_transparent_busy' not found.")
+        print("Timeout: Element 'div.navigator_transparent_busy' (green dates) not found.")
         
-def process_calendar(driver):
+def process_one_verification(driver):
     """
         1. Get current Month and Year.
         2. Verify if time slots are available immediately and get the date for it.
@@ -332,23 +330,31 @@ def process_calendar(driver):
         6. Repeat steps 2-5 until all available time slots are processed for that location.
         7. Repeat steps 1-6 for all locations indefinitely.
     """
+    current_month_year = datetime.now().strftime("%B %Y")
+    location = "Nassau CC CDL"
+    select_test_site_after_verification(driver, location)        
+    process_time_slots(driver, location)        
+    process_div_busy_elements(driver, location)
+    month_move(driver, "div.navigator_transparent_titleright", location)
+    process_div_busy_elements(driver, location)
+    month_move(driver, "div.navigator_transparent_titleleft", location, current_month_year)
 
+    location = "Uniondale CDL"
+    select_test_site_after_verification(driver, location) # "Fresh Kills CDL" "Uniondale CDL" "Nassau CC CDL"
+    process_time_slots(driver, location)        
+    process_div_busy_elements(driver, location)
+    month_move(driver, "div.navigator_transparent_titleright", location)
+    process_div_busy_elements(driver, location)
+    month_move(driver, "div.navigator_transparent_titleleft", location, current_month_year) 
+
+def process_calendar(driver):
+    i = 0
     while True:
-        current_month_year = datetime.now().strftime("%B %Y")
-        
-        select_test_site_after_verification(driver, "Nassau CC CDL")
-        process_time_slots(driver)
-        process_div_busy_elements(driver)
-        month_move(driver, "div.navigator_transparent_titleright")
-        process_div_busy_elements(driver)
-        month_move(driver, "div.navigator_transparent_titleleft", current_month_year)
-
-        select_test_site_after_verification(driver, "Uniondale CDL")
-        process_time_slots(driver)
-        process_div_busy_elements(driver)
-        month_move(driver, "div.navigator_transparent_titleright")
-        process_div_busy_elements(driver)
-        month_move(driver, "div.navigator_transparent_titleleft", current_month_year)    
+        process_one_verification(driver)
+        i = i + 1
+        if i > 5:
+            print("Processed 5 iterations. Exiting.")
+            return   
 
 def main():
     driver = setup_driver()
