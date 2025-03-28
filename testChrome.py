@@ -3,7 +3,7 @@ import time
 import traceback
 
 from datetime                           import datetime
-from deepdiff                           import DeepDiff
+from hashdiff                           import HashComparator
 from selenium                           import webdriver
 from selenium.common.exceptions         import WebDriverException, NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.service  import Service
@@ -325,15 +325,16 @@ def process_div_busy_elements(driver, location):
     except TimeoutException:
         print("Timeout: Element 'div.navigator_transparent_busy' (green dates) not found.")
         
-def send_notification(location, added_items, changed_items):
+def send_notification(differences):
     """
     Send a notification when new or changed time slots are detected.
-    """
-    print(f"Notification: Changes detected for {location}.")
-    if added_items:
-        print(f"Added time slots: {added_items}")
-    if changed_items:
-        print(f"Changed time slots: {changed_items}")
+    """    
+    if differences['added_locations']:
+        print(f"Added new locations: {differences['added_locations']}")
+    if differences['added_dates']:
+        print(f"Added new dates: {differences['added_dates']}")
+    if differences['added_times']:
+        print(f"Added new times: {differences['added_times']}")    
     # Add your notification logic here (e.g., email, SMS, etc.)
 
 def process_one_verification(driver):
@@ -351,7 +352,7 @@ def process_one_verification(driver):
     global local_time_slots_per_location_date
 
     current_month_year = datetime.now().strftime("%B %Y")
-    locations = ["Nassau CC CDL", "Uniondale CDL"]  # Add more locations as needed "Fresh Kills CDL" "Uniondale CDL" "Nassau CC CDL"
+    locations = ["Nassau CC CDL", "Uniondale CDL", "Fresh Kills CDL"]  # Add more locations as needed "Fresh Kills CDL" "Uniondale CDL" "Nassau CC CDL"
     local_time_slots_per_location_date = {}
 
     for location in locations:
@@ -363,29 +364,13 @@ def process_one_verification(driver):
         process_div_busy_elements(driver, location)
         month_move(driver, "div.navigator_transparent_titleleft", location, current_month_year)
 
-        # Compare with global_time_slots_per_location_date
-        if location not in global_time_slots_per_location_date:
-            global_time_slots_per_location_date[location] = {}
-        global_time_slots = global_time_slots_per_location_date[location]
+    comparator = HashComparator()
+    differences = comparator.diff(global_time_slots_per_location_date, local_time_slots_per_location_date)
+    print(differences)
+    send_notification(differences)
 
-        diff = DeepDiff(global_time_slots, local_time_slots_per_location_date.get(location, {}), ignore_order=True)
-
-        # Handle removed values
-        if "dictionary_item_removed" in diff:
-            removed_items = diff["dictionary_item_removed"]
-            print(f"Removed time slots for location {location}: {removed_items}")
-            for key in removed_items:
-                date = key.split("[")[1].strip("']")
-                global_time_slots.pop(date, None)
-
-        # Handle added or changed values
-        if "dictionary_item_added" in diff or "values_changed" in diff:
-            added_or_changed_items = diff.get("dictionary_item_added", {})
-            changed_items = diff.get("values_changed", {})
-            print(f"Added or changed time slots for location {location}: {added_or_changed_items} {changed_items}")
-            global_time_slots.update(time_slots_per_location_date.get(location, {}))
-            send_notification(location, added_or_changed_items, changed_items)
-
+    global_time_slots_per_location_date = local_time_slots_per_location_date
+    
 def process_calendar(driver):
     i = 0
     while True:
