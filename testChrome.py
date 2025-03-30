@@ -352,7 +352,7 @@ def process_one_verification(driver):
     global local_time_slots_per_location_date
 
     current_month_year = datetime.now().strftime("%B %Y")
-    locations = ["Nassau CC CDL", "Uniondale CDL", "Fresh Kills CDL"]  # Add more locations as needed "Fresh Kills CDL" "Uniondale CDL" "Nassau CC CDL"
+    locations = ["Fresh Kills CDL"]  # Add more locations as needed "Fresh Kills CDL" "Uniondale CDL" "Nassau CC CDL" "Nassau CC CDL", "Uniondale CDL",
     local_time_slots_per_location_date = {}
 
     for location in locations:
