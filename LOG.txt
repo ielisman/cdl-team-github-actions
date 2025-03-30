@@ -1,0 +1,137 @@
+No appointments found for 03/30/2025.
+Checking for green dates for location: Uniondale CDL...
+PS C:\development\redhookcommercial\automation\cdl-team-keller>
+PS C:\development\redhookcommercial\automation\cdl-team-keller>  c:; cd 'c:\development\redhookcommercial\automation\cdl-team-keller'; & 'c:\Python310\python.exe' 'c:\Users\ielis\.vscode\extensions\ms-python.debugpy-2025.4.1-win32-x64\bundled\libs\debugpy\launcher' '52702' '--' 'c:\development\redhookcommercial\automation\cdl-team-keller\testChrome.py'
+
+DevTools listening on ws://127.0.0.1:52726/devtools/browser/d3314ea9-c0a3-43d1-bbb1-46e3e65e44d9
+Found loginContinueMessage If you continue, their session will be lost. Would you like to continue?
+Found existing session. Cancelling it
+Navigating to booking page
+Found reCAPTCHA frame
+solve_recaptcha Exception occurred
+Created TensorFlow Lite XNNPACK delegate for CPU.
+Attempting to use a delegate that only supports static-sized tensors with a graph that has dynamic-sized tensors (tensor#-1 is a dynamic-sized tensor).
+Checking for All CIDs are eligible
+Found text - All CIDs are eligible. Proceeding
+Found text - Your account may hold up to ... Proceeding
+Processing location: Fresh Kills CDL
+No appointments found for 03/30/2025.
+Checking for green dates for location: Fresh Kills CDL...
+Found 8 div_busy elements.
+Green date is found: 1
+Green Date: Sleeping for 0.9926948044304837 seconds before invoking process_time_slots for Fresh Kills CDL 1.
+Time Slots for Fresh Kills CDL 05/01/2025 : ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']
+Green date is found: 9
+Green Dates: Staleness check failed for div
+Green Date: Sleeping for 0.8955227296498985 seconds before invoking process_time_slots for Fresh Kills CDL 9.
+Time Slots for Fresh Kills CDL 05/09/2025 : ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']
+IndexError: div_busy_elements list has changed. Skipping index 2.
+IndexError: div_busy_elements list has changed. Skipping index 4.
+IndexError: div_busy_elements list has changed. Skipping index 3.
+IndexError: div_busy_elements list has changed. Skipping index 5.
+IndexError: div_busy_elements list has changed. Skipping index 7.
+Green date is found: 29
+Green Date: Sleeping for 0.8228855858046709 seconds before invoking process_time_slots for Fresh Kills CDL 29.
+green dates. Error while processing element: Message: stale element reference: stale element not found in the current frame
+  (Session info: chrome=133.0.6943.127)
+Stacktrace:
+        GetHandleVerifier [0x01180B43+25139]
+        (No symbol) [0x011113F4]
+        (No symbol) [0x00FF04E3]
+        (No symbol) [0x00FF6F01]
+        (No symbol) [0x00FF900A]
+        (No symbol) [0x00FF9087]
+        (No symbol) [0x010330EE]
+        (No symbol) [0x0105CFCC]
+        (No symbol) [0x0102D9A4]
+        (No symbol) [0x0105D244]
+        (No symbol) [0x0107E778]
+        (No symbol) [0x0105CDC6]
+        (No symbol) [0x0102BDE9]
+        (No symbol) [0x0102D124]
+        GetHandleVerifier [0x01484373+3185251]
+        GetHandleVerifier [0x014A291A+3309578]
+        GetHandleVerifier [0x0149CF42+3286578]
+        GetHandleVerifier [0x01217AE0+643536]
+        (No symbol) [0x0111A20D]
+        (No symbol) [0x011170B8]
+        (No symbol) [0x01117257]
+        (No symbol) [0x01109E00]
+        BaseThreadInitThunk [0x74F27BA9+25]
+        RtlInitializeExceptionChain [0x770DC28B+107]
+        RtlClearBits [0x770DC20F+191]
+
+Clicked inside div.navigator_transparent_titleright for location Fresh Kills CDL. Calendar is April 2025
+Checking for green dates for location: Fresh Kills CDL...
+Found 2 div_busy elements.
+Green date is found: 1
+Green Dates: Staleness check failed for div
+Green Date: Sleeping for 1.0462576036180136 seconds before invoking process_time_slots for Fresh Kills CDL 1.
+Time Slots for Fresh Kills CDL 05/01/2025 : ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']
+Green date is found: 29
+Green Date: Sleeping for 0.7900865365019318 seconds before invoking process_time_slots for Fresh Kills CDL 29.
+Timeout: Element 'MainContent_dlDetailsSlots' not found.
+Current calendar month and year: April 2025. Location is Fresh Kills CDL
+Clicked inside div.navigator_transparent_titleleft (Fresh Kills CDL). Attempt 1.
+Current calendar month and year: March 2025. Location is Fresh Kills CDL
+Target month and year 'March 2025' for location Fresh Kills CDL was reached.
+{'same_times': {}, 'added_locations': {'Fresh Kills CDL': {'05/01/2025': ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM'], '05/09/2025': ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']}}, 'added_dates': {}, 'added_times': {}, 'removed_locations': {}, 'removed_dates': {}, 'removed_times': {}}
+Added new locations: {'Fresh Kills CDL': {'05/01/2025': ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM'], '05/09/2025': ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']}}
+Processing location: Fresh Kills CDL
+No appointments found for 03/30/2025.
+Checking for green dates for location: Fresh Kills CDL...
+Timeout: Element 'div.navigator_transparent_busy' (green dates) not found.
+Clicked inside div.navigator_transparent_titleright for location Fresh Kills CDL. Calendar is March 2025
+Checking for green dates for location: Fresh Kills CDL...
+Found 8 div_busy elements.
+Green date is found: 1
+Green Date: Sleeping for 0.8812540025441178 seconds before invoking process_time_slots for Fresh Kills CDL 1.
+Time Slots for Fresh Kills CDL 05/01/2025 : ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']
+Green date is found: 9
+Green Date: Sleeping for 1.0057288720511512 seconds before invoking process_time_slots for Fresh Kills CDL 9.
+Time Slots for Fresh Kills CDL 05/09/2025 : ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']
+IndexError: div_busy_elements list has changed. Skipping index 2.
+IndexError: div_busy_elements list has changed. Skipping index 4.
+IndexError: div_busy_elements list has changed. Skipping index 3.
+IndexError: div_busy_elements list has changed. Skipping index 5.
+IndexError: div_busy_elements list has changed. Skipping index 7.
+Green date is found: 29
+Green Date: Sleeping for 0.9148084986086802 seconds before invoking process_time_slots for Fresh Kills CDL 29.
+No appointments found for 04/29/2025.
+Found Green Date for Fresh Kills CDL 04/29/2025 with no time slots
+Current calendar month and year: April 2025. Location is Fresh Kills CDL
+Clicked inside div.navigator_transparent_titleleft (Fresh Kills CDL). Attempt 1.
+Current calendar month and year: March 2025. Location is Fresh Kills CDL
+Target month and year 'March 2025' for location Fresh Kills CDL was reached.
+{'same_times': {'Fresh Kills CDL': {'05/01/2025': ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM'], '05/09/2025': ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']}}, 'added_locations': {}, 'added_dates': {}, 'added_times': {}, 'removed_locations': {}, 'removed_dates': {}, 'removed_times': {}}
+Processing location: Fresh Kills CDL
+No appointments found for 03/30/2025.
+Checking for green dates for location: Fresh Kills CDL...
+Timeout: Element 'div.navigator_transparent_busy' (green dates) not found.
+Clicked inside div.navigator_transparent_titleright for location Fresh Kills CDL. Calendar is March 2025
+Checking for green dates for location: Fresh Kills CDL...
+Found 8 div_busy elements.
+Green date is found: 1
+Green Date: Sleeping for 0.7688059904008419 seconds before invoking process_time_slots for Fresh Kills CDL 1.
+No appointments found for 05/01/2025.
+Found Green Date for Fresh Kills CDL 05/01/2025 with no time slots
+Green date is found: 9
+Green Dates: Staleness check failed for div
+Green Date: Sleeping for 0.8131993538557136 seconds before invoking process_time_slots for Fresh Kills CDL 9.
+Time Slots for Fresh Kills CDL 05/09/2025 : ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']
+IndexError: div_busy_elements list has changed. Skipping index 2.
+IndexError: div_busy_elements list has changed. Skipping index 4.
+IndexError: div_busy_elements list has changed. Skipping index 3.
+IndexError: div_busy_elements list has changed. Skipping index 5.
+IndexError: div_busy_elements list has changed. Skipping index 7.
+Green date is found: 29
+Green Date: Sleeping for 0.7938754501917751 seconds before invoking process_time_slots for Fresh Kills CDL 29.
+process_time_slots: Exception occurred while counting time slots
+Current calendar month and year: April 2025. Location is Fresh Kills CDL
+Clicked inside div.navigator_transparent_titleleft (Fresh Kills CDL). Attempt 1.
+Current calendar month and year: March 2025. Location is Fresh Kills CDL
+Target month and year 'March 2025' for location Fresh Kills CDL was reached.
+{'same_times': {'Fresh Kills CDL': {'05/09/2025': ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']}}, 'added_locations': {}, 'added_dates': {}, 'added_times': {}, 'removed_locations': {}, 'removed_dates': {'Fresh Kills CDL': {'04/29/2025': []}}, 'removed_times': {'Fresh Kills CDL': {'05/01/2025': ['08:30 AM', '09:45 AM', '12:45 PM', '02:00 PM']}}}
+Processing location: Fresh Kills CDL
+No appointments found for 03/30/2025.
+Checking for green dates for location: Fresh Kills CDL...
