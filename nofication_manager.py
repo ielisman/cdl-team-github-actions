@@ -19,14 +19,16 @@ class NotificationManager:
         Send a Firebase Cloud Messaging notification with the differences hash.
         :param differences: The differences hash to include in the notification.
         """
+        # this is token for my phone. Get tokens for other phones as well
+        token = "fjyfxJf9SnSBYvQ6vsoWNY:APA91bEJ1c1iyGpdFWmXZ7o-osReEYYqBu_41LsjICtL7MFs8qcjSybzklDlMFokzZwyPGjakJ1RnCeC_PvyNtneHWEjZR3ne-Ae5RKhgdrFQzcLwC0aMxE"
         try:
             # Prepare the notification message
             message = messaging.Message(
                 notification=messaging.Notification(
                     title="Road Test Notification",
                     body=f"RT Updates:\n{differences}"
-                ),
-                topic="rt-updates"  # Replace with your topic name
+                ),                
+                token=token # topic="rt-updates"  # Replace with your topic name
             )
 
             # Send the notification
@@ -63,3 +65,14 @@ class NotificationManager:
             print(f"Email sent successfully to {to_email}")
         except Exception as e:
             print(f"Error sending email: {e}")
+
+firebase_cred_path = "./firebase_service_account.json"
+notification_manager = NotificationManager(firebase_cred_path)
+
+differences = {
+    "added_locations": {"Nice Test Area CDL": {"03/31/2025": ["8:30", "9:30"]}},
+    "added_dates": {},
+    "added_times": {}
+}
+notification_manager.send_firebase_notification(
+    "Nice Test Area CDL 1\n  03/31/2025 8:30, 9:30\nNice Test Area CDL 3\n  03/31/2025 12:45")
