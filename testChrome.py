@@ -17,7 +17,7 @@ from selenium_recaptcha_solver          import RecaptchaSolver
 
 # 1. https://www.python.org/downloads (Check the box "Add Python to PATH" or do it manually. python --version)
 # 2. https://ffmpeg.org/download.html (download and extract to a folder, add the folder to PATH. ffmpeg -version)
-# 3. pip install selenium webdriver-manager selenium-recaptcha-solver ffmpeg (pip show selenium ffmpeg ...)
+# 3. pip install selenium webdriver-manager selenium-recaptcha-solver speechrecognition ffmpeg firebase-admin (pip show selenium ffmpeg ...)
 #    optional: python -m pip install --upgrade pip
 
 global_time_slots_per_location_date = {}
@@ -266,6 +266,48 @@ def process_time_slots(driver, location, appointments_date=None, viaGreenDate=Fa
         except Exception as e:
             print(f"process_time_slots: Exception occurred while counting time slots")        
         
+
+def process_div_busy_elements_new(driver, location):
+        try:
+            sorted_numbers = sorted(
+                int(div.text.strip()) for div in driver.find_elements(By.XPATH, "//div[contains(@class, 'navigator_transparent_busy')]/div[contains(@class, 'navigator_transparent_cell_text')]")
+            )
+            print(f"Sorted numbers: {sorted_numbers}")
+
+            # Iterate over each sorted number
+            for number in sorted_numbers:
+                try:
+                    # Wait for the parent div of the number to be present and interactable
+                    # //*[@id="MainContent_dlDetailsSlots_lblDetailsTimeSlot_0"]
+                    # /html/body/div[1]/form[1]/div[5]/div[3]/div[3]/div/div/div[4]/table/tbody/tr/td[2]/fieldset/table/tbody/tr/td[1]/div/span
+                    parent_div = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((
+                            By.XPATH,
+                            f"//div[contains(@class, 'navigator_transparent_busy')]/div[contains(@class, 'navigator_transparent_cell_text') and text()='{number}']/.."
+                        ))
+                    )
+                    print(f"Clicking on parent div for number: {number}")
+                    parent_div.click()
+
+                    # Wait for staleness of the clicked element to ensure the page updates
+                    WebDriverWait(driver, 10).until(EC.staleness_of(parent_div))
+                    print(f"Successfully clicked on parent div for number: {number}")
+
+                    # Optional: Add a short delay to avoid overwhelming the server
+                    time.sleep(1)
+
+                except TimeoutException:
+                    print(f"Timeout: Could not find or interact with the parent div for number {number}.")
+                except Exception as e:
+                    print(f"Error while processing number {number}: {e}")
+                    continue
+
+        except ValueError:
+            print("Error: One of the elements contains non-numeric text.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
+
 def process_div_busy_elements(driver, location):
     print(f"Checking for green dates for location: {location}...")
 
@@ -274,6 +316,15 @@ def process_div_busy_elements(driver, location):
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.navigator_transparent_busy"))
         )
         div_busy_elements = driver.find_elements(By.CSS_SELECTOR, "div.navigator_transparent_busy")        
+
+        # 1. get all dates from div_busy_elements and sort them
+        # 2. Loop over each number. Retrieve each new component without staleness, i.e. via WebDriverWait
+        #               a) component is located under div.navigator_transparent_busy
+        #               b) it is located in ".//div[contains(@class, 'navigator_transparent_cell_text')]"
+        #               c) and text under that component equals to the number of initial loop
+        # 3. If it will be possible to process all components 
+        #    in parallel (async) and has function that waits for all components to finish up (yield), use this function to process all time slots at once
+
 
         if div_busy_elements:
             print(f"Found {len(div_busy_elements)} div_busy elements.")
