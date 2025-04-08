@@ -31,7 +31,7 @@ def setup_driver():
     # chrome_options.add_argument(f"--load-extension={buster_extension_path}")
 
     # chrome_options.add_argument('--headless')
-    # chrome_options.add_argument('--start-maximized')
+    chrome_options.add_argument('--start-maximized')
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     return driver
 
@@ -272,7 +272,23 @@ def process_div_busy_elements_new(driver, location):
             sorted_numbers = sorted(
                 int(div.text.strip()) for div in driver.find_elements(By.XPATH, "//div[contains(@class, 'navigator_transparent_busy')]/div[contains(@class, 'navigator_transparent_cell_text')]")
             )
-            print(f"Sorted numbers: {sorted_numbers}")
+            print(f"Sorted numbers: {sorted_numbers}") # works good, issue is when numbers repeat
+
+            # TODO find the green date via navigator_transparent_busy and div element path for that date, 
+            # TODO i.e. //*[@id="MainContent_dpDetailsNavigator"]/div/div[27]/div[2] because date from previous month, i.e. Apr 1 can be together with May 1
+            # TODO or go over the dev components instead of dates, i.e. div[5], div[11], div[17], div[23], div[29], div[35], div[41], 
+            # TODO                                                      div[6], div[12], div[18], div[24], div[30], div[36], div[42],
+            # TODO                                                      div[7], div[13], div[19], div[25], div[31], div[37], div[43], 
+            # TODO                                                      div[8], div[14], div[20], div[26], div[32], div[38], div[44],
+            # TODO                                                      div[9], div[15], div[21], div[27], div[33], div[39], div[45]
+
+            exit(0)
+
+            matrix = [5,11,17,23,29,35,41,
+                      6,12,18,24,30,36,42,
+                      7,13,19,25,31,37,43,
+                      8,14,20,26,32,38,44,
+                      9,15,21,27,33,39,45]
 
             # Iterate over each sorted number
             for number in sorted_numbers:
@@ -437,8 +453,8 @@ def main():
         login(driver, "https://www.nyakts.com/Login.aspx?mid=2269", "7583ds", "Ditmas_201!")
         navigate_to_booking_page(driver, "https://www.nyakts.com/NyRstApps/ThirdPartyBooking.aspx?mid=2269")
         solve_recaptcha(driver)
-        select_test_site(driver, "Nassau CC CDL") # "Fresh Kills CDL"
-        enter_cid_dob_cdlclass(driver, "910840069", "06/29/1988", "CDL A (Class A CDL)")
+        select_test_site(driver, "Fresh Kills CDL") # "Fresh Kills CDL" "Nassau CC CDL"
+        enter_cid_dob_cdlclass(driver, "368101939", "07/27/2003", "CDL A (Class A CDL)")
         check_eligibility(driver)
         wait_for_calendar_page(driver)
         process_calendar(driver)
