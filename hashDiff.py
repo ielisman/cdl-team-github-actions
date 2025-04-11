@@ -49,7 +49,14 @@ class HashComparator:
                             print(f"Same {location} {appointment_date} for hash1 and hash2: {hash2[location][appointment_date]}")
                         self.initialize_nested_dict(same_times, location, appointment_date)
                         same_times[location][appointment_date] = hash2[location][appointment_date]
-
+            elif hash1[location] == hash2[location]: 
+                for appointment_date in hash2[location].keys():
+                    for times_slot in hash2[location][appointment_date]:
+                        if printAnalysis:
+                            print(f"Same {location} {appointment_date} for hash1 and hash2: {hash2[location][appointment_date]}")
+                        self.initialize_nested_dict(same_times, location, appointment_date)
+                        same_times[location][appointment_date] = hash2[location][appointment_date]
+                
         for location in hash1.keys():
             if location not in hash2:
                 if printAnalysis:
