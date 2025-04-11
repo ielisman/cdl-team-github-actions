@@ -26,7 +26,7 @@ class NotificationManager:
             message = messaging.Message(
                 notification=messaging.Notification(
                     title="Road Test Notification",
-                    body=f"RT Updates:\n{differences}"
+                    body=differences
                 ),                
                 token=token # topic="rt-updates"  # Replace with your topic name
             )
@@ -66,13 +66,63 @@ class NotificationManager:
         except Exception as e:
             print(f"Error sending email: {e}")
 
-firebase_cred_path = "./firebase_service_account.json"
-notification_manager = NotificationManager(firebase_cred_path)
+# firebase_cred_path = "./firebase_service_account.json"
+# notification_manager = NotificationManager(firebase_cred_path)
+
+# differences = {
+#     "added_locations": {"Nice Test Area CDL": {"03/31/2025": ["8:30", "9:30"]}},
+#     "added_dates": {},
+#     "added_times": {}
+# }
+# notification_manager.send_firebase_notification(
+#     "Nice Test Area CDL 1\n  03/31/2025 8:30, 9:30\nNice Test Area CDL 3\n  03/31/2025 12:45")
+
+def send_notification(differences):
+    """
+    Send a notification when new or changed time slots are detected.
+    """    
+    result = ""
+    for key in differences:
+        if key == 'added_locations' and differences[key]:
+            locations = differences[key]
+            for location in locations:
+                result += f"{location}\n"
+                for date, times in locations[location].items():
+                    result += f" {date} : {times}\n"
+        elif key == 'added_dates' and differences[key]:
+            locations = differences[key]
+            for location in locations:
+                result += f"{location} (new dates are added)\n"
+                for date, times in locations[location].items():
+                    result += f" {date} : {times}\n"
+        elif key == 'added_times' and differences[key]:
+            locations = differences[key]
+            for location in locations:
+                result += f"{location} (new times are added to exist dates)\n"
+                for date, times in locations[location].items():
+                    result += f" {date} : {times}\n"
+
+    if result:
+        print(f"Sending notification\n{result}")
+        firebase_cred_path = "./firebase_service_account.json"
+        notification_manager = NotificationManager(firebase_cred_path)
+        notification_manager.send_firebase_notification(result)
+    else:
+        print("No new time slots detected. No notification sent.")
 
 differences = {
-    "added_locations": {"Nice Test Area CDL": {"03/31/2025": ["8:30", "9:30"]}},
-    "added_dates": {},
-    "added_times": {}
+    'same_times' : {},
+    'added_locations': {
+        'Nassau CC CDL': {
+            '04/15/2025': ['12:45 PM']
+        }
+    },
+    'added_dates': {},
+    'added_times': {},
+    'removed_locations': {},
+    'removed_dates': {},
+    'removed_times': {}
 }
-notification_manager.send_firebase_notification(
-    "Nice Test Area CDL 1\n  03/31/2025 8:30, 9:30\nNice Test Area CDL 3\n  03/31/2025 12:45")
+
+#send_notification(differences)
+
