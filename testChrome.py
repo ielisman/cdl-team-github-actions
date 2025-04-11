@@ -5,6 +5,7 @@ import traceback
 from datetime                           import datetime
 from dateutil.relativedelta             import relativedelta
 from hashdiff                           import HashComparator
+from notification_manager               import NotificationManager
 from selenium                           import webdriver
 from selenium.common.exceptions         import WebDriverException, NoSuchElementException, TimeoutException, StaleElementReferenceException
 from selenium.webdriver.chrome.service  import Service
@@ -355,6 +356,10 @@ def process_one_verification(driver):
     
 def process_calendar(driver):
 
+    global notification_manager
+    firebase_cred_path = "./firebase_service_account.json"
+    notification_manager = NotificationManager(firebase_cred_path)
+
     i = 0
     while True:
         print(f"\n ------------- Processing iteration {i} ... -----------------")
@@ -398,16 +403,35 @@ def get_multiple(driver, html_elements, by_locator, locator_value, max_attempts=
     return html_elements
 
 def send_notification(differences):
-    """
-    Send a notification when new or changed time slots are detected.
-    """    
-    if differences['added_locations']:
-        print(f"Added new locations: {differences['added_locations']}")
-    if differences['added_dates']:
-        print(f"Added new dates: {differences['added_dates']}")
-    if differences['added_times']:
-        print(f"Added new times: {differences['added_times']}")    
-    # Add your notification logic here (e.g., email, SMS, etc.)
+
+    global notification_manager
+
+    result = ""
+    for key in differences:
+        if key == 'added_locations':
+            locations = differences[key]
+            for location in locations:
+                result += f"{location}\n"
+                for date, times in locations[location].items():
+                    result += f"{date} : {times}\n"
+        elif key == 'added_dates':
+            locations = differences[key]
+            for location in locations:
+                result += f"{location} (new dates are added)\n"
+                for date, times in locations[location].items():
+                    result += f"{date} : {times}\n"
+        elif key == 'added_times':
+            locations = differences[key]
+            for location in locations:
+                result += f"{location} (new times are added to exist dates)\n"
+                for date, times in locations[location].items():
+                    result += f"{date} : {times}\n"
+
+    if result:
+        print(f"Sending notification: {result}")
+        notification_manager.send_firebase_notification(result)
+    else:
+        print("No new time slots detected. No notification sent.")
 
 def main():
     driver = setup_driver()
@@ -415,7 +439,7 @@ def main():
         login(driver, "https://www.nyakts.com/Login.aspx?mid=2269", "7583ds", "Ditmas_201!")
         navigate_to_booking_page(driver, "https://www.nyakts.com/NyRstApps/ThirdPartyBooking.aspx?mid=2269")
         solve_recaptcha(driver)
-        select_test_site(driver, "Fresh Kills CDL") # "Fresh Kills CDL" "Nassau CC CDL"
+        select_test_site(driver, "Nassau CC CDL") # "Fresh Kills CDL" "Nassau CC CDL"
         enter_cid_dob_cdlclass(driver, "368101939", "07/27/2003", "CDL A (Class A CDL)")
         check_eligibility(driver)
         wait_for_calendar_page(driver)
