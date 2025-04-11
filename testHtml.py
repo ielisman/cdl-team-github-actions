@@ -4,9 +4,10 @@ import time
 import traceback
 
 from datetime                           import datetime
+from dateutil.relativedelta             import relativedelta
 from hashdiff                           import HashComparator
 from selenium                           import webdriver
-from selenium.common.exceptions         import WebDriverException, NoSuchElementException, TimeoutException
+from selenium.common.exceptions         import WebDriverException, NoSuchElementException, TimeoutException, StaleElementReferenceException
 from selenium.webdriver.chrome.service  import Service
 from selenium.webdriver.common.by       import By
 from selenium.webdriver.support         import expected_conditions as EC
@@ -44,84 +45,90 @@ def setup_driver():
     return driver
 
 def process_div_busy_elements_new(driver, location):
-        try:
-            matrix = [5,11,17,23,29,35,41,
-                      6,12,18,24,30,36,42,
-                      7,13,19,25,31,37,43,
-                      8,14,20,26,32,38,44,
-                      9,15,21,27,33,39,45]
-            for index, el in enumerate(matrix): 
-                try:
-                    try:
-                        div = WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.XPATH, f"//*[@id='MainContent_dpDetailsNavigator']/div/div[{el}]")))
-                    except TimeoutException:
-                        print(f"Timeout: Element {el} not found.")
-                        continue
-                    
-                    div = driver.find_element(By.XPATH, f"//*[@id='MainContent_dpDetailsNavigator']/div/div[{el}]")
-                    child_div = div.find_element(By.XPATH, ".//div[contains(@class, 'navigator_transparent_cell_text')]")
-                    class_attributes = div.get_attribute("class").split()
-                    number = child_div.text.strip()
-                    isGreenDate = False; isPreviousMonthDate = False; isNextMonthDate = False
+        
+        matrix =   [5,11,17,23,29,35,41,
+                    6,12,18,24,30,36,42,
+                    7,13,19,25,31,37,43,
+                    8,14,20,26,32,38,44,
+                    9,15,21,27,33,39,45]
+
+        for index, el in enumerate(matrix): 
+            try:
+
+                div_xpath = f"//*[@id='MainContent_dpDetailsNavigator']/div/div[{el}]"
+                child_div_xpath = f"{div_xpath}//div[contains(@class, 'navigator_transparent_cell_text')]"
+                
+                print(f"\tprocess_div_busy_elements div_xpath {el}")
+                div = driver.find_element(By.XPATH, div_xpath)
+                class_attributes = get_action(driver, div, By.XPATH, div_xpath, lambda x: x.get_attribute("class").split())
+                #class_attributes = div.get_attribute("class").split()
+
+                print(f"\tprocess_div_busy_elements child_div_xpath {el}")
+                child_div = driver.find_element(By.XPATH, child_div_xpath)
+                number = get_action(driver, div, By.XPATH, child_div_xpath, lambda x: x.text.strip())
+                # number = child_div.text.strip()
+
+                isGreenDate = False; isPreviousMonthDate = False; isNextMonthDate = False
+
+                if "navigator_transparent_busy" in class_attributes:
                     if "navigator_transparent_dayother" in class_attributes and "navigator_transparent_day" not in class_attributes:
                         if index < 7:
                             isPreviousMonthDate = True
                         else:
                             isNextMonthDate = True
-                    if "navigator_transparent_busy" in class_attributes:
 
-                        navigator_transparent_title = WebDriverWait(driver, 7).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.navigator_transparent_title")))
-                        calendar_month_year = navigator_transparent_title.text.strip()
-                        current_month_year = datetime.now().strftime("%B %Y")
+                    navigator_transparent_title = WebDriverWait(driver, 7).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.navigator_transparent_title")))
+                    calendar_month_year = navigator_transparent_title.text.strip()
+                    date_obj = datetime.strptime(f"{calendar_month_year}", "%B %Y")
 
-                        to_print = f"DIV[{el}] Date is {number} calendar_month_year={calendar_month_year} attributes={class_attributes} => GREEN DATE IS FOUND"
-                        if isPreviousMonthDate:
-                            to_print = f"{to_print} => previous month date"
-                        elif isNextMonthDate:
-                            to_print = f"{to_print} => next month date"
-                        if "navigator_transparent_select" in class_attributes:
-                            to_print = f"{to_print} => this date is selected" # i.e. the first date when there are time slots available
-                        print(to_print)
-                        div.click()
-                        #print(f" Clicked on div for number: {number}")
-                except Exception as e:
-                    print(f" => Exception occurred: {e}")
-                    
-            exit(0)
+                    to_print = f"DIV[{el}] DN={number} my={calendar_month_year} attr={class_attributes}"
+                    if isPreviousMonthDate:
+                        target_month_date = date_obj - relativedelta(months=1)
+                        target_month_date_obj = target_month_date.replace(day=int(number))
+                        clicked_date = target_month_date_obj.strftime("%m/%d/%Y")
+                        to_print = f"{to_print} => previous month date {clicked_date}"
+                    elif isNextMonthDate:
+                        target_month_date = date_obj + relativedelta(months=1)
+                        target_month_date_obj = target_month_date.replace(day=int(number))
+                        clicked_date = target_month_date_obj.strftime("%m/%d/%Y")
+                        to_print = f"{to_print} => next month date {clicked_date}"
+                    else:
+                        target_month_date_obj = date_obj.replace(day=int(number))
+                        clicked_date = target_month_date_obj.strftime("%m/%d/%Y")
+                        to_print = f"{to_print} => current month date {clicked_date}"
 
-            # Iterate over each sorted number
-            for number in sorted_numbers:
-                try:
-                    # Wait for the parent div of the number to be present and interactable
-                    # //*[@id="MainContent_dlDetailsSlots_lblDetailsTimeSlot_0"]
-                    # /html/body/div[1]/form[1]/div[5]/div[3]/div[3]/div/div/div[4]/table/tbody/tr/td[2]/fieldset/table/tbody/tr/td[1]/div/span
-                    parent_div = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((
-                            By.XPATH,
-                            f"//div[contains(@class, 'navigator_transparent_busy')]/div[contains(@class, 'navigator_transparent_cell_text') and text()='{number}']/.."
-                        ))
-                    )
-                    print(f"Clicking on parent div for number: {number}")
-                    parent_div.click()
+                    if "navigator_transparent_select" in class_attributes:
+                        to_print = f"{to_print} => sel date" # i.e. the first date when there are time slots available
 
-                    # Wait for staleness of the clicked element to ensure the page updates
-                    WebDriverWait(driver, 10).until(EC.staleness_of(parent_div))
-                    print(f"Successfully clicked on parent div for number: {number}")
+                    print(to_print)
+                    get_action(driver, div, By.XPATH, div_xpath, lambda x: x.click())
+                    sleep_time = random.uniform(0.75, 1.135)
 
-                    # Optional: Add a short delay to avoid overwhelming the server
-                    time.sleep(1)
+                    process_time_slots(driver, "Nassau CC CDL", clicked_date, True) # already processed once   
 
-                except TimeoutException:
-                    print(f"Timeout: Could not find or interact with the parent div for number {number}.")
-                except Exception as e:
-                    print(f"Error while processing number {number}: {e}")
-                    continue
+            except Exception as e:
+                print(f" => Exception occurred: {e}")
 
-        except ValueError:
-            print("Error: One of the elements contains non-numeric text.")
+from selenium.common.exceptions import StaleElementReferenceException
+
+def get_action(driver, html_element, by_locator, locator_value, operation, max_attempts=3):
+    
+    attempts = 0
+    while attempts < max_attempts:
+        try:
+            return operation(html_element)
+        except StaleElementReferenceException:
+            print(f"StaleElementReferenceException encountered. Retrying... Attempt {attempts + 1}")
+            html_element = driver.find_element(by_locator, locator_value)
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print(f"An error occurred: {e}")
+            html_element = driver.find_element(by_locator, locator_value)
+        attempts += 1
 
+    return result
+
+def process_time_slots(driver, location, appointments_date=None, viaGreenDate=False):
+    print (f"Processing time slots for {location} on {appointments_date}")
 
 def main():
     driver = setup_driver()
