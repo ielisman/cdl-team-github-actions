@@ -314,6 +314,9 @@ def process_time_slots(driver, location, appointments_date, viaGreenDate=False):
         print(f"\tTime Slots for {location} {appointments_date} : {time_slots_list}")
     except TimeoutException:
         print("Timeout: Element 'MainContent_dlDetailsSlots' or time slots not found. Green day with no slots")
+        if location not in local_time_slots_per_location_date:
+            local_time_slots_per_location_date[location] = {}
+        local_time_slots_per_location_date[location][appointments_date] = ['No slots']
     except Exception as e:
         print(f"process_time_slots: Exception occurred while counting time slots: {e}")
         
@@ -413,19 +416,19 @@ def send_notification(differences):
             for location in locations:
                 result += f"{location}\n"
                 for date, times in locations[location].items():
-                    result += f"{date} : {times}\n"
+                    result += f" {date} : {', '.join(times)}\n"
         elif key == 'added_dates':
             locations = differences[key]
             for location in locations:
-                result += f"{location} (new dates are added)\n"
+                result += f"{location} (new dates)\n"
                 for date, times in locations[location].items():
-                    result += f"{date} : {times}\n"
+                    result += f" {date} : {', '.join(times)}\n"
         elif key == 'added_times':
             locations = differences[key]
             for location in locations:
-                result += f"{location} (new times are added to exist dates)\n"
+                result += f"{location} (new times or no slots)\n"
                 for date, times in locations[location].items():
-                    result += f"{date} : {times}\n"
+                    result += f" {date} : {', '.join(times)}\n"
 
     if result:
         print(f"Sending notification: {result}")
