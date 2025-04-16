@@ -88,19 +88,19 @@ def send_notification(differences):
             for location in locations:
                 result += f"{location}\n"
                 for date, times in locations[location].items():
-                    result += f" {date} : {times}\n"
+                    result += f" {date} : {', '.join(times)}\n"  # Convert times list to comma-delimited string
         elif key == 'added_dates' and differences[key]:
             locations = differences[key]
             for location in locations:
                 result += f"{location} (new dates are added)\n"
                 for date, times in locations[location].items():
-                    result += f" {date} : {times}\n"
+                    result += f" {date} : {', '.join(times)}\n"  # Convert times list to comma-delimited string
         elif key == 'added_times' and differences[key]:
             locations = differences[key]
             for location in locations:
                 result += f"{location} (new times are added to exist dates)\n"
                 for date, times in locations[location].items():
-                    result += f" {date} : {times}\n"
+                    result += f" {date} : {', '.join(times)}\n"  # Convert times list to comma-delimited string
 
     if result:
         print(f"Sending notification\n{result}")
@@ -114,7 +114,7 @@ differences = {
     'same_times' : {},
     'added_locations': {
         'Nassau CC CDL': {
-            '04/15/2025': ['12:45 PM']
+            '04/15/2025': ['No Slots']
         }
     },
     'added_dates': {},
@@ -124,5 +124,5 @@ differences = {
     'removed_times': {}
 }
 
-#send_notification(differences)
+send_notification(differences)
 
