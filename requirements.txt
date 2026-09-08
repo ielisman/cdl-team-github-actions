@@ -1,0 +1,18 @@
+# Core scanner dependencies
+selenium
+webdriver-manager
+selenium-recaptcha-solver
+SpeechRecognition
+pydub
+python-dateutil
+firebase-admin
+supabase
+requests
+
+# Used by other existing scripts in this repo
+pycryptodome
+undetected-chromedriver
+sendgrid
+
+# System dependency (not installable via pip):
+# ffmpeg must be installed separately and available on PATH for audio captcha solving.

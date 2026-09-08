@@ -162,3 +162,15 @@ sendgrid.env
 
 #firebase
 firebase_service_account.json
+
+# Scanner config contains real credentials (site login, email app password,
+# Supabase service_role key) - never commit it. See rt_scanner_config.example.json.
+rt_scanner_config.json
+
+# Local Claude Code tooling config/session artifacts - not project source.
+.claude/
+
+# Node / Vite (cdl-pwa)
+node_modules/
+dist/
+cdl-pwa/.env

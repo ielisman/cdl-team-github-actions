@@ -1,0 +1,33 @@
+{
+  "login": {
+    "url": "https://www.nyakts.com/Login.aspx?mid=2269",
+    "booking_url": "https://www.nyakts.com/NyRstApps/ThirdPartyBooking.aspx?mid=2269",
+    "username": "YOUR_AKTS_USERNAME",
+    "password": "YOUR_AKTS_PASSWORD"
+  },
+  "student": {
+    "cid": "000000000",
+    "dob": "MM/DD/YYYY",
+    "cdl_class": "CDL A (Class A CDL)"
+  },
+  "locations": [
+    "Nassau CC CDL",
+    "Bellerose CDL",
+    "Uniondale CDL"
+  ],
+  "notifications_enabled": false,
+  "email_notifications_enabled": false,
+  "email_from": "YOUR_GMAIL_ADDRESS",
+  "email_app_password": "",
+  "email_to": [
+    "recipient@example.com"
+  ],
+  "firebase_cred_path": "./firebase_service_account.json",
+  "poll_interval_seconds": 10,
+  "restart_interval_seconds": 30,
+  "restart_allowed_on_error": 3,
+  "restart_pause_minutes": 15,
+  "supabase_url": "http://localhost:54321",
+  "supabase_service_key": "",
+  "supabase_schema": "cdl_scanner"
+}

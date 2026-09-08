@@ -1,21 +1,24 @@
 import random
 import time
 import traceback
+import json
+import os
+import socket
 
 from datetime                           import datetime
 from dateutil.relativedelta             import relativedelta
 from hashdiff                           import HashComparator
 from notification_manager               import NotificationManager
-from selenium                           import webdriver
-from selenium.common.exceptions         import WebDriverException, NoSuchElementException, TimeoutException, StaleElementReferenceException
-from selenium.webdriver.chrome.service  import Service
-from selenium.webdriver.common.by       import By
+from supabase_manager                   import SupabaseManager
+from selenium                           import webdriver  
+from selenium.common.exceptions         import WebDriverException, NoSuchElementException, TimeoutException, StaleElementReferenceException  # pyright: ignore[reportMissingImports]
+from selenium.webdriver.chrome.service  import Service 
+from selenium.webdriver.common.by       import By  
 from selenium.webdriver.support         import expected_conditions as EC
-from selenium.webdriver.support.ui      import WebDriverWait, Select
-from webdriver_manager.chrome           import ChromeDriverManager
+from selenium.webdriver.support.ui      import WebDriverWait, Select 
+from webdriver_manager.chrome           import ChromeDriverManager  
 
-from selenium_recaptcha_solver          import RecaptchaSolver
-
+from selenium_recaptcha_solver          import RecaptchaSolver 
 
 # 1. https://www.python.org/downloads (Check the box "Add Python to PATH" or do it manually. python --version)
 # 2. https://ffmpeg.org/download.html (download and extract to a folder, add the folder to PATH. ffmpeg -version)
@@ -24,6 +27,63 @@ from selenium_recaptcha_solver          import RecaptchaSolver
 
 global_time_slots_per_location_date = {}
 local_time_slots_per_location_date = {}
+notification_manager = None
+notifications_enabled = False
+supabase_mgr = None
+email_notifications_enabled = False
+email_sender = ""
+email_password = ""
+email_recipients = []
+consecutive_session_errors = 0
+
+
+def load_config(config_path="rt_scanner_config.json"):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    resolved_path = os.path.join(script_dir, config_path)
+    with open(resolved_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    required_root_keys = ["login", "student", "locations"]
+    for key in required_root_keys:
+        if key not in config:
+            raise ValueError(f"Missing required config key: {key}")
+
+    if not config["locations"]:
+        raise ValueError("Config key 'locations' must contain at least one location")
+
+    return config
+
+
+def get_config_or_env(config_value, env_var, placeholders=None):
+    """Return config value unless it is blank/placeholder, then fall back to env var."""
+    placeholders = placeholders or set()
+    if config_value is None:
+        return os.getenv(env_var, "")
+    if isinstance(config_value, str):
+        value = config_value.strip()
+        if not value or value in placeholders:
+            return os.getenv(env_var, "")
+        return value
+    return config_value
+
+def setup_driver_original():
+    chrome_options = webdriver.ChromeOptions()
+
+    # user_profile = os.environ.get("USERPROFILE") # for Buster Chrome Extension but shadow elements doesn't work
+    # buster_extension_path = os.path.join(user_profile,"AppData","Local","Google","Chrome","User Data","Profile 4","Extensions","mpbjkejclgfgadiemmefgebjfooflfhl", "3.1.0_0")
+    # chrome_options.add_argument(f"--load-extension={buster_extension_path}")
+
+    # chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--start-maximized')
+    chrome_options.add_argument('--disable-usb-discovery')
+    chrome_options.add_argument('--disable-blink-features=AutomationControlled')  # Prevent detection as automation
+    chrome_options.add_argument('--disable-dev-shm-usage')  # Prevent shared memory issues
+    chrome_options.add_argument('--no-sandbox')  # Disable sandboxing (useful in some environments)
+    chrome_options.add_argument('--disable-extensions')  # Disable all Chrome extensions
+    chrome_options.add_argument('--disable-notifications') 
+
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    return driver    
 
 def setup_driver():
     chrome_options = webdriver.ChromeOptions()
@@ -41,7 +101,25 @@ def setup_driver():
     chrome_options.add_argument('--disable-extensions')  # Disable all Chrome extensions
     chrome_options.add_argument('--disable-notifications') 
 
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    # Additional noise-reduction flags; existing options above are intentionally unchanged.
+    chrome_options.add_argument('--disable-background-networking')
+    chrome_options.add_argument('--disable-sync')
+    chrome_options.add_argument('--metrics-recording-only')
+    chrome_options.add_argument('--disable-default-apps')
+    chrome_options.add_argument('--no-first-run')
+
+    chrome_options.add_experimental_option(
+        'prefs',
+        {
+            'profile.default_content_setting_values.notifications': 2,
+            'credentials_enable_service': False,
+            'profile.password_manager_enabled': False,
+        },
+    )
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+
+    service = Service(ChromeDriverManager().install(), log_output=os.devnull)
+    driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
 def login(driver, url, username, password):
@@ -121,21 +199,36 @@ def enter_cid_dob_cdlclass(driver, cid, dob, cdlclass):
     cdlClassSelect = Select(driver.find_element(by=By.ID, value="ddlCidDlgTestType1")) # Select CDL class
     cdlClassSelect.select_by_visible_text(cdlclass)    
 
+def click_element_with_retry(driver, by, value, timeout_seconds=30, max_attempts=3):
+    attempts = 0
+    while attempts < max_attempts:
+        try:
+            element = WebDriverWait(driver, timeout_seconds).until(
+                EC.element_to_be_clickable((by, value))
+            )
+            element.click()
+            return True
+        except StaleElementReferenceException:
+            print(f"StaleElementReferenceException clicking {value}. Retrying attempt {attempts + 1}")
+        except TimeoutException:
+            print(f"Timeout while waiting to click {value}. Attempt {attempts + 1}")
+        except Exception as e:
+            print(f"Exception clicking {value}: {e}. Attempt {attempts + 1}")
+        attempts += 1
+    return False
+
 def check_eligibility(driver):
 
     # TODO: Please Verify if the following error occurs under class="error-message-label" (under parent div id="MainContent_vsClientInfoDlgErrMsg"):
     # There was a problem calling CheckElibility with client Id 910840069, test type A and retrieveImage False.
     # Retry N times or go back to Scheduling link
 
-    try:        
-        WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.ID, "chkClientInfoDlg")))        
-        driver.find_element(By.ID, value="chkClientInfoDlg").click() 
-    except TimeoutException:
-        print("Timeout: Element 'chkClientInfoDlg' not interactable after waiting.")
-    except Exception as e:
-        print(f"chkClientInfoDlg Exception occurred: {e}")
+    if not click_element_with_retry(driver, By.ID, "chkClientInfoDlg", timeout_seconds=60, max_attempts=3):
+        print("Failed to click chkClientInfoDlg after retries")
         
-    driver.find_element(By.ID, value="btnClientInfoDlgCheckEligibility").click()
+    if not click_element_with_retry(driver, By.ID, "btnClientInfoDlgCheckEligibility", timeout_seconds=30, max_attempts=3):
+        print("Failed to click btnClientInfoDlgCheckEligibility after retries")
+        return
     # here you can have the error: There was a problem calling CheckElibility with client Id
 
     okMsg  = driver.find_element(By.ID, value="MainContent_vsClientInfoDlgOkMsg")
@@ -145,20 +238,16 @@ def check_eligibility(driver):
         WebDriverWait(driver, 90).until(
             EC.text_to_be_present_in_element((By.ID, "MainContent_vsClientInfoDlgOkMsg"), "All CIDs are eligible")
         )
-        print ("Found text - All CIDs are eligible. Proceeding")   
-        driver.find_element(By.ID, value="btnClientInfoDlgContinue").click()
+        print ("Found text - All CIDs are eligible. Proceeding")
+        if not click_element_with_retry(driver, By.ID, "btnClientInfoDlgContinue", timeout_seconds=30, max_attempts=3):
+            print("Failed to click btnClientInfoDlgContinue after retries")
     except TimeoutException:
         print("Timeout: Element 'MainContent_vsClientInfoDlgOkMsg' cannot find such text.")
     except Exception as e:
         print(f"MainContent_vsClientInfoDlgOkMsg Exception occurred: {e}")
 
-    try:        
-        WebDriverWait(driver, 90).until(EC.element_to_be_clickable((By.ID, "chkClientInfoDlg")))        
-        driver.find_element(By.ID, value="chkClientInfoDlg").click()
-    except TimeoutException:
-        print("Timeout: Element 'chkClientInfoDlg' not interactable after waiting.")
-    except Exception as e:
-        print(f"chkClientInfoDlg Exception occurred: {e}")
+    if not click_element_with_retry(driver, By.ID, "chkClientInfoDlg", timeout_seconds=90, max_attempts=3):
+        print("Unable to re-click chkClientInfoDlg after eligibility step")
 
 def wait_for_calendar_page(driver):
     try:
@@ -240,8 +329,7 @@ def process_div_busy_elements(driver, location):
                     8,14,20,26,32,38,44,
                     9,15,21,27,33,39,45]
 
-        for index, el in enumerate(matrix): 
-            try:
+        for index, el in enumerate(matrix):
 
                 div_xpath = f"//*[@id='MainContent_dpDetailsNavigator']/div/div[{el}]"
                 child_div_xpath = f"{div_xpath}//div[contains(@class, 'navigator_transparent_cell_text')]"
@@ -296,9 +384,6 @@ def process_div_busy_elements(driver, location):
                         process_time_slots(driver, location, clicked_date, True)
                         time.sleep(random.uniform(1.135, 1.535))
 
-            except Exception as e:
-                print(f"process_div_busy_elements => Exception occurred: {e}")
-
 def process_time_slots(driver, location, appointments_date, viaGreenDate=False):
     print(f"process_time_slots: Appointments date: {appointments_date}")
     global local_time_slots_per_location_date
@@ -320,7 +405,46 @@ def process_time_slots(driver, location, appointments_date, viaGreenDate=False):
     except Exception as e:
         print(f"process_time_slots: Exception occurred while counting time slots: {e}")
         
-def process_one_verification(driver):
+def _apply_differences_to_supabase(supabase_mgr, differences):
+    """
+    Translate a HashComparator.diff() result into scan_results row updates.
+
+    added_locations / added_dates / added_times -> open_slot per time slot
+    (the 'No slots' sentinel value is routed to mark_no_slots instead).
+    removed_locations / removed_dates -> close every open slot for that
+    location/date. removed_times -> close_slot per time slot.
+    """
+    no_slots = SupabaseManager._NO_SLOTS_SENTINEL
+
+    def open_slots(by_location_date):
+        for location, dates in by_location_date.items():
+            for date, slots in dates.items():
+                for time_slot in slots:
+                    if time_slot == no_slots:
+                        supabase_mgr.mark_no_slots(location, date)
+                    else:
+                        supabase_mgr.open_slot(location, date, time_slot)
+                        supabase_mgr.clear_no_slots(location, date)
+
+    open_slots(differences.get("added_locations", {}))
+    open_slots(differences.get("added_dates", {}))
+    open_slots(differences.get("added_times", {}))
+
+    for location, dates in differences.get("removed_times", {}).items():
+        for date, slots in dates.items():
+            for time_slot in slots:
+                supabase_mgr.close_slot(location, date, time_slot)
+
+    for location, dates in differences.get("removed_dates", {}).items():
+        for date in dates:
+            supabase_mgr.close_all_open_for_date(location, date)
+
+    for location, dates in differences.get("removed_locations", {}).items():
+        for date in dates:
+            supabase_mgr.close_all_open_for_date(location, date)
+
+
+def process_one_verification(driver, locations):
     """
         1. Get current Month and Year.
         2. Verify if time slots are available immediately and get the date for it.
@@ -333,10 +457,11 @@ def process_one_verification(driver):
 
     global global_time_slots_per_location_date
     global local_time_slots_per_location_date
+    global consecutive_session_errors
+
+    local_time_slots_per_location_date = {}  # Reset for a clean scan cycle
 
     current_month_year = datetime.now().strftime("%B %Y")
-    locations = ["Nassau CC CDL", "Uniondale CDL"]  # Add more locations as needed "Fresh Kills CDL", "Uniondale CDL", "Nassau CC CDL", "Nassau CC CDL", "Uniondale CDL", "Raceway CDL"
-
     for location in locations:
         print(f"---------- SELECTING TEST SITE: {location}")
         select_test_site_after_verification(driver, location)
@@ -355,22 +480,86 @@ def process_one_verification(driver):
     print(differences)
     send_notification(differences)
 
+    # Apply the diff directly to Supabase: opened/closed slot rows per (location, date, time_slot)
+    if supabase_mgr:
+        try:
+            _apply_differences_to_supabase(supabase_mgr, differences)
+        except Exception as e:
+            print(f"Supabase write error: {e}")
+
     global_time_slots_per_location_date = local_time_slots_per_location_date
-    
-def process_calendar(driver):
+    consecutive_session_errors = 0  # Full cycle completed cleanly; reset the restart budget
 
-    global notification_manager
-    firebase_cred_path = "./firebase_service_account.json"
-    notification_manager = NotificationManager(firebase_cred_path)
+def process_calendar(driver, firebase_cred_path, locations, poll_interval_seconds=10,
+                     notifications_enabled_value=False,
+                     supabase_url="", supabase_key="", supabase_schema="public",
+                     email_notifications_enabled_value=False, email_from="",
+                     email_app_password="", email_to=None):
 
-    i = 0
+    global notification_manager, notifications_enabled, supabase_mgr
+    global email_notifications_enabled, email_sender, email_password, email_recipients
+    global global_time_slots_per_location_date
+    notifications_enabled = notifications_enabled_value
+    email_notifications_enabled = email_notifications_enabled_value
+    email_sender = email_from
+    email_password = email_app_password
+    email_recipients = email_to or []
+
+    if email_notifications_enabled and not (email_sender and email_password and email_recipients):
+        print("Email notifications enabled but email_from/email_app_password/email_to are incomplete; disabling")
+        email_notifications_enabled = False
+
+    if notifications_enabled or email_notifications_enabled:
+        notification_manager = NotificationManager(firebase_cred_path if notifications_enabled else None)
+    else:
+        print("Notifications are disabled by configuration")
+
+    # Connect to Supabase for commands (pause / remote locations) and result persistence
+    if supabase_url and supabase_key:
+        try:
+            supabase_mgr = SupabaseManager(supabase_url, supabase_key, supabase_schema)
+            print(f"Supabase: connected (schema={supabase_schema})")
+
+            # Seed in-memory state from currently-open rows so slots that closed
+            # while the scanner was offline are still detected as removed.
+            try:
+                global_time_slots_per_location_date = supabase_mgr.get_open_slots_by_location_date()
+                print(f"Supabase: seeded in-memory state from {sum(len(d) for d in global_time_slots_per_location_date.values())} open date(s)")
+            except Exception as e:
+                print(f"Supabase: could not seed in-memory state from existing rows: {e}")
+        except Exception as e:
+            print(f"Supabase init failed: {e}. Continuing without Supabase.")
+            supabase_mgr = None
+    else:
+        print("Supabase URL/key not configured. Running without remote control.")
+        supabase_mgr = None
+
+    current_locations = list(locations)
+
     while True:
-        print(f"\n ------------- Processing iteration {i} ... -----------------")
-        process_one_verification(driver)
-        i = i + 1
-        if i > 1:
-            print(f"Processed {i} iterations. Exiting.")
-            return   
+        print("\n ------------- Processing scan cycle ... -----------------")
+
+        # Check remote commands (pause / updated locations) from the PWA
+        if supabase_mgr:
+            try:
+                supabase_mgr.send_heartbeat(os.getpid(), socket.gethostname())
+            except Exception as e:
+                print(f"Supabase heartbeat error: {e}")
+            try:
+                commands = supabase_mgr.get_commands()
+                if commands.get("paused", False):
+                    print("Scanner PAUSED by remote command. Waiting 5 s ...")
+                    time.sleep(5)
+                    continue
+                remote_locs = commands.get("locations")
+                if remote_locs:
+                    current_locations = remote_locs
+            except Exception as e:
+                print(f"Supabase command check error: {e}")
+
+        process_one_verification(driver, current_locations)
+        print(f"Sleeping for {poll_interval_seconds} seconds before next scan cycle")
+        time.sleep(poll_interval_seconds)
 
 def get_action(driver, html_element, by_locator, locator_value, operation, max_attempts=3):
     
@@ -386,7 +575,7 @@ def get_action(driver, html_element, by_locator, locator_value, operation, max_a
             html_element = driver.find_element(by_locator, locator_value)
         attempts += 1
 
-    return result
+    return None
 
 def get_multiple(driver, html_elements, by_locator, locator_value, max_attempts=3):
     
@@ -408,6 +597,12 @@ def get_multiple(driver, html_elements, by_locator, locator_value, max_attempts=
 def send_notification(differences):
 
     global notification_manager
+    global notifications_enabled
+    global email_notifications_enabled, email_sender, email_password, email_recipients
+
+    if not notifications_enabled and not email_notifications_enabled:
+        print("Notifications disabled; skipping notification send")
+        return
 
     result = ""
     for key in differences:
@@ -426,35 +621,169 @@ def send_notification(differences):
         elif key == 'added_times':
             locations = differences[key]
             for location in locations:
+                
                 result += f"{location} (new times or no slots)\n"
                 for date, times in locations[location].items():
                     result += f" {date} : {', '.join(times)}\n"
 
     if result:
         print(f"Sending notification: {result}")
-        notification_manager.send_firebase_notification(result)
+        if notifications_enabled:
+            # Prefer FCM tokens stored in Firestore; fall back to hardcoded default token
+            tokens = None
+            if supabase_mgr:
+                try:
+                    tokens = supabase_mgr.get_fcm_tokens() or None
+                except Exception as e:
+                    print(f"Could not fetch FCM tokens from Supabase: {e}")
+            notification_manager.send_firebase_notification(result, tokens)
+        if email_notifications_enabled:
+            notification_manager.send_email(
+                email_sender, email_password, email_recipients,
+                "Road Test Alert", result,
+            )
     else:
         print("No new time slots detected. No notification sent.")
 
-def main():
-    driver = setup_driver()
+def _send_failure_email(email_enabled, email_from, email_app_password, email_to,
+                         restart_allowed_on_error, restart_pause_minutes, error):
+    """Notify by email that the scanner exceeded its consecutive-restart budget."""
+    if not (email_enabled and email_from and email_app_password and email_to):
+        print("Email notifications not fully configured; skipping failure email")
+        return
     try:
-        login(driver, "https://www.nyakts.com/Login.aspx?mid=2269", "7583ds", "REDACTED_PASSWORD")
-        navigate_to_booking_page(driver, "https://www.nyakts.com/NyRstApps/ThirdPartyBooking.aspx?mid=2269")
-        solve_recaptcha(driver)
-        select_test_site(driver, "Nassau CC CDL") # "Fresh Kills CDL" "Nassau CC CDL"
-        enter_cid_dob_cdlclass(driver, "368101939", "07/27/2003", "CDL A (Class A CDL)")
-        check_eligibility(driver)
-        wait_for_calendar_page(driver)
-        process_calendar(driver)
+        subject = "CDL Road Test Scanner: repeated failures, script paused"
+        body = (
+            f"The scanner failed {restart_allowed_on_error} consecutive time(s) while trying to "
+            f"log in / read the calendar and is now pausing for {restart_pause_minutes} minute(s) "
+            f"before trying again.\n\n"
+            f"Last error:\n{error}\n\n"
+            f"{traceback.format_exc()}"
+        )
+        manager = NotificationManager()
+        manager.send_email(email_from, email_app_password, email_to, subject, body)
     except Exception as e:
-        print(f"Exception occurred: {e}")
-    finally:
-        time.sleep(30000)
-        driver.quit()
+        print(f"Failed to send failure notification email: {e}")
+
+
+def main():
+    config = load_config()
+
+    login_config             = config["login"]
+    student_config           = config["student"]
+    locations                = config["locations"]
+    firebase_cred_path       = config.get("firebase_cred_path", "./firebase_service_account.json")
+    poll_interval_seconds    = config.get("poll_interval_seconds", 10)
+    notifications_enabled_value = config.get("notifications_enabled", False)
+    restart_interval_seconds = config.get("restart_interval_seconds", 30)
+    restart_allowed_on_error = config.get("restart_allowed_on_error", 0) or 0
+    restart_pause_minutes    = config.get("restart_pause_minutes", 15)
+    email_notifications_enabled_value = config.get("email_notifications_enabled", False)
+    email_from               = config.get("email_from", "")
+    email_app_password       = get_config_or_env(
+        config.get("email_app_password", ""),
+        "GMAIL_APP_PASSWORD",
+    )
+    email_to                 = config.get("email_to", [])
+    supabase_url             = get_config_or_env(
+        config.get("supabase_url", ""),
+        "SUPABASE_URL",
+    )
+    supabase_key             = get_config_or_env(
+        config.get("supabase_service_key", ""),
+        "SUPABASE_SERVICE_ROLE_KEY",
+        {"YOUR_SUPABASE_SERVICE_ROLE_KEY"},
+    )
+    supabase_schema          = get_config_or_env(
+        config.get("supabase_schema", "public"),
+        "SUPABASE_SCHEMA",
+    )
+
+    global consecutive_session_errors
+
+    # Claim ownership of scanner_commands before doing anything else. If another
+    # instance is already alive on this machine (recent pid + heartbeat), refuse
+    # to start a second scanner against the same site/account.
+    scanner_pid = os.getpid()
+    scanner_hostname = socket.gethostname()
+    if supabase_url and supabase_key:
+        try:
+            owner_mgr = SupabaseManager(supabase_url, supabase_key, supabase_schema)
+            heartbeat_stale_after_seconds = 15 * 60
+            claimed = owner_mgr.claim_ownership_or_none(scanner_pid, scanner_hostname, heartbeat_stale_after_seconds)
+            if claimed is None:
+                commands = owner_mgr.get_commands()
+                print(
+                    f"Another scanner instance appears to be running: "
+                    f"pid={commands.get('scanner_pid')} host={commands.get('scanner_hostname')} "
+                    f"last_heartbeat={commands.get('scanner_heartbeat_at')}. Refusing to start a second instance."
+                )
+                return
+            if student_config:
+                owner_mgr.initialize_commands_if_missing(locations, student_config)
+            owner_mgr.sync_locations_from_config(locations)
+        except Exception as e:
+            print(f"Supabase ownership check failed: {e}. Continuing without ownership guarantee.")
+
+    while True:  # Outer restart loop — reinitialises Chrome after any failure
+        # Prefer the PWA-managed active student from Supabase; fall back to
+        # rt_scanner_config.json's "student" when Supabase has none configured.
+        active_student = student_config
+        if supabase_url and supabase_key:
+            try:
+                remote_student = SupabaseManager(supabase_url, supabase_key, supabase_schema).get_active_student()
+                if remote_student:
+                    active_student = remote_student
+            except Exception as e:
+                print(f"Could not fetch active student from Supabase: {e}. Using config default.")
+
+        driver = None
+        try:
+            driver = setup_driver()
+            login(driver, login_config["url"], login_config["username"], login_config["password"])
+            navigate_to_booking_page(driver, login_config["booking_url"])
+            solve_recaptcha(driver)
+            select_test_site(driver, locations[0])
+            enter_cid_dob_cdlclass(driver, active_student["cid"], active_student["dob"], active_student["cdl_class"])
+            check_eligibility(driver)
+            wait_for_calendar_page(driver)
+            process_calendar(driver, firebase_cred_path, locations, poll_interval_seconds,
+                             notifications_enabled_value,
+                             supabase_url, supabase_key, supabase_schema,
+                             email_notifications_enabled_value, email_from,
+                             email_app_password, email_to)
+        except Exception as e:
+            print(f"Exception in main loop: {e}")
+            traceback.print_exc()
+
+            if restart_allowed_on_error > 0:
+                consecutive_session_errors += 1
+                print(f"Consecutive session-restart attempt {consecutive_session_errors}/{restart_allowed_on_error}")
+
+                if consecutive_session_errors > restart_allowed_on_error:
+                    print(
+                        f"Exceeded restart_allowed_on_error={restart_allowed_on_error} consecutive failures. "
+                        f"Pausing for {restart_pause_minutes} minute(s) before trying again."
+                    )
+                    _send_failure_email(
+                        email_notifications_enabled_value, email_from, email_app_password, email_to,
+                        restart_allowed_on_error, restart_pause_minutes, e,
+                    )
+                    time.sleep(restart_pause_minutes * 60)
+                    consecutive_session_errors = 0  # Fresh budget after the pause
+        finally:
+            if driver:
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+        print(f"Restarting Chrome in {restart_interval_seconds} seconds ...")
+        time.sleep(restart_interval_seconds)
 
 if __name__ == "__main__":
     main()
+
+
 
 # Change between RT sites
 # <select name="ctl00$MainContent$ddlDetailTestSiteId" onchange="javascript:setTimeout('__doPostBack(\'ctl00$MainContent$ddlDetailTestSiteId\',\'\')', 0)" id="MainContent_ddlDetailTestSiteId" class="width99pct">
@@ -468,6 +797,7 @@ if __name__ == "__main__":
 # 				<option value="194">3rd Party We Transport CDL Elmont</option>
 # 				<option value="3191">Aqueduct CDL</option>
 # 				<option value="2945">Auburn CDL</option>
+#               <option value="3164">Bellerose CDL</option>
 # 				<option value="3004">Brewster CDL</option>
 # 				<option value="5444">Bronx CDL 2- Alexander Ave</option>
 # 				<option value="904">Catskill CDL</option>
